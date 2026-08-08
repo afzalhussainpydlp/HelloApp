@@ -194,3 +194,41 @@ h1{
     max-width: 60%;
     border-radius: 10px;
 }
+
+/* Message Input */
+
+.message-input {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 15px;
+    background-color: #f0f0f0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+.message-input input {
+    flex: 1;
+    padding: 12px 15px;
+    border: none;
+    border-radius: 25px;
+    outline: none;
+    font-size: 16px;
+}
+
+.message-input button {
+    width: 45px;
+    height: 45px;
+    border: none;
+    border-radius: 50%;
+    background-color: #25D366;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.message-input button:hover {
+    background-color: #20bd5a;
+}
