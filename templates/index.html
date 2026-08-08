@@ -1,0 +1,148 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>HelloApp</title>
+
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <div class="navbar">
+        <h1>HelloApp</h1>
+
+        <div class="icons">
+            <span>🔍</span>
+            <span>⋮</span>
+        </div>
+    </div>
+
+
+    <!-- Search Box -->
+    <div class="search-box">
+        <input type="text" placeholder="Search or start new chat">
+    </div>
+
+
+    <!-- Chat 1 -->
+   <a href="/chat/" class="chat-link">
+
+    <div class="chat">
+
+        <div class="profile">
+            <img class="profile-img"
+                 src="{% static 'images/profile.jpg.jpg' %}"
+                 alt="Profile">
+        </div>
+
+        <div class="message">
+            <h3>Afzal</h3>
+            <p>Hello</p>
+        </div>
+
+        <div class="time">
+            <div>10:30 PM</div>
+            <div class="badge">1</div>
+        </div>
+
+    </div>
+
+</a>
+
+
+    
+   <!-- Chat 2 -->
+<div class="chat">
+
+    <div class="profile">
+        <img class="profile-img"
+             src="{% static 'images/ansari.jpg' %}"
+             alt="Ansari">
+    </div>
+
+    <div class="message">
+        <h3>Ansari</h3>
+        <p>Kya haal h 😊</p>
+    </div>
+
+    <div class="time">
+        <div>11:00 AM</div>
+        <div class="badge">2</div>
+    </div>
+
+</div>
+
+    <!-- Chat 3 -->
+    <div class="chat">
+
+        <div class="profile">
+            <img class="profile-img"
+            src="{% static 'images/modi.jpg'%}"
+            alt="narendra">
+        </div>
+
+        <div class="message">
+            <h3>Narender Modi</h3>
+            <p>Hello mai Narendra Modi... 😊</p>
+        </div>
+
+        <div class="time">
+            <div>Yesterday</div>
+            <div class="badge">7</div>
+        </div>
+
+    </div>
+
+
+    <!-- Chat 4 -->
+<div class="chat">
+
+    <div class="profile">
+        <img class="profile-img"
+             src="{% static 'images/ambani.jpg' %}"
+             alt="Mukesh">
+    </div>
+
+    <div class="message">
+        <h3>Mukesh Ambani</h3>
+        <p>Bro 100cr daal diye ab tho bth krlona 😊</p>
+    </div>
+
+    <div class="time">
+        <div>Monday</div>
+        <div class="badge">3</div>
+    </div>
+
+</div>
+
+
+    <!-- Chat 5 -->
+    <div class="chat">
+
+        <div class="profile">
+            <img class="profile-img"
+            src ="{% static 'images/shrdha.jpg' %}"
+            alt="shardha">
+        </div>
+
+        <div class="message">
+            <h3>Shraddha Kapoor</h3>
+            <p>Please call utha lo 😊</p>
+        </div>
+
+        <div class="time">
+            <div>9:15 PM</div>
+            <div class="badge">6</div>
+        </div>
+
+    </div>
+
+
+   
+
+</body>
+
+</html>
