@@ -138,3 +138,59 @@ h1{
     color: inherit;
     display: block;
 }
+
+/* Chat Navbar */
+
+.chat-navbar {
+    display: flex;
+    align-items: center;
+    background-color: #25D366;
+    color: white;
+    padding: 10px 15px;
+}
+
+.back {
+    font-size: 30px;
+    margin-right: 15px;
+    cursor: pointer;
+}
+
+.chat-profile {
+    font-size: 35px;
+    margin-right: 10px;
+}
+
+.chat-user h3 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.chat-user p {
+    margin: 3px 0 0;
+    font-size: 12px;
+}
+/* Messages Area */
+
+.messages {
+    padding: 15px;
+    min-height: 400px;
+}
+
+.received {
+    background-color: white;
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    width: fit-content;
+    max-width: 60%;
+    border-radius: 10px;
+}
+
+.sent {
+    background-color: #d9fdd3;
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    margin-left: auto;
+    width: fit-content;
+    max-width: 60%;
+    border-radius: 10px;
+}

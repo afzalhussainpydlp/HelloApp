@@ -1,14 +1,62 @@
+{% load static %}
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Afzal Chat</title>
+     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 
 <body>
 
-    <h1>Afzal</h1>
+    <!-- Chat Navbar -->
+    <div class="chat-navbar">
 
-    <p>Chat screen opened successfully! 🎉</p>
+        <span class="back">←</span>
+
+        <div class="chat-profile">
+            👤
+        </div>
+
+        <div class="chat-user">
+            <h3>Afzal</h3>
+            <p>online</p>
+        </div>
+
+    </div>
+
+
+    <!-- Messages -->
+    <div class="messages">
+
+        <div class="received">
+            Hello bro 👋
+        </div>
+
+        <div class="sent">
+            Hello bhai 😊
+        </div>
+
+        <div class="received">
+            Kya haal hai?
+        </div>
+
+        <div class="sent">
+            Bilkul mast 😎
+        </div>
+
+    </div>
+
+
+    <!-- Message Input -->
+    <div class="message-box">
+
+        <input type="text" placeholder="Type a message">
+
+        <button>➤</button>
+
+    </div>
 
 </body>
+
 </html>
