@@ -18,3 +18,12 @@ function sendMessage() {
 
     input.value = "";
 }
+let input = document.getElementById("messageInput");
+
+input.addEventListener("keydown", function(event) {
+
+    if (event.key === "Enter") {
+        sendMessage();
+    }
+
+});
