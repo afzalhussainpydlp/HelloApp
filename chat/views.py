@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from .models import Message
 
 
 def home(request):
@@ -6,4 +7,8 @@ def home(request):
 
 
 def chat_page(request):
-    return render(request, "chat.html")
+    messages = Message.objects.all()
+
+    return render(request, "chat.html", {
+        "messages": messages
+    })

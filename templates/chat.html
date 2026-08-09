@@ -27,24 +27,19 @@
     </div>
 
 
+    
     <!-- Messages -->
-    <div class="messages" id ="messages">
+<div class="messages" id="messages">
+
+    {% for message in messages %}
 
         <div class="received">
-            Hello bro 👋
+            {{ message.text }}
         </div>
 
-        <div class="sent">
-            Hello bhai 😊
-        </div>
+    {% endfor %}
 
-        <div class="received">
-            Kya haal hai?
-        </div>
 
-        <div class="sent">
-            Bilkul mast 😎
-        </div>
 
     </div>
 
