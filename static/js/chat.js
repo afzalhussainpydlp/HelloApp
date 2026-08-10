@@ -7,6 +7,30 @@ function sendMessage() {
         return;
     }
 
+    let csrfToken = document.querySelector(
+        "[name=csrfmiddlewaretoken]"
+    ).value;
+
+    fetch("/send-message/", {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": csrfToken
+        },
+        body: new URLSearchParams({
+            message: message
+        })
+    })
+    .then(response => {
+        console.log("Django response:", response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log("Django data:", data);
+    })
+    .catch(error => {
+        console.error("Error:", error);
+    });
+
     let messages = document.getElementById("messages");
 
     let newMessage = document.createElement("div");
@@ -18,6 +42,8 @@ function sendMessage() {
 
     input.value = "";
 }
+
+
 let input = document.getElementById("messageInput");
 
 input.addEventListener("keydown", function(event) {

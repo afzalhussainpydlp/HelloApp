@@ -1,5 +1,6 @@
-
 {% load static %}
+{% csrf_token %}
+
 <!DOCTYPE html>
 <html>
 
@@ -31,17 +32,25 @@
     <!-- Messages -->
 <div class="messages" id="messages">
 
-    {% for message in messages %}
+  {% for message in messages %}
 
-        <div class="received">
+    <div class="received">
+
+        <strong>{{ message.sender }}</strong>
+
+        <div>
             {{ message.text }}
         </div>
 
-    {% endfor %}
-
-
+        <small>
+            {{ message.created_at|date:"h:i A" }}
+        </small>
 
     </div>
+
+{% endfor %}
+
+
 
 
     <!-- Message Input -->
