@@ -1,8 +1,8 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render
 from django.http import JsonResponse
-from .models import Message
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
+from .models import Message
 
 
 def home(request):
@@ -11,14 +11,15 @@ def home(request):
 
 def chat_page(request, user_id):
 
-    print("CURRENT USER:", request.user)
-
-    receiver = get_object_or_404(User, id=user_id)
+    receiver = User.objects.get(id=user_id)
 
     messages = Message.objects.filter(
-        sender_user__in=[request.user, receiver],
-        receiver_user__in=[request.user, receiver]
-    ).order_by("created_at")
+        sender_user=request.user,
+        receiver_user=receiver
+    ) | Message.objects.filter(
+        sender_user=receiver,
+        receiver_user=request.user
+    )
 
     return render(request, "chat.html", {
         "messages": messages,
@@ -33,7 +34,7 @@ def send_message(request):
         text = request.POST.get("message")
         receiver_id = request.POST.get("receiver_id")
 
-        receiver = get_object_or_404(User, id=receiver_id)
+        receiver = User.objects.get(id=receiver_id)
 
         Message.objects.create(
             sender=request.user.username,
@@ -49,7 +50,6 @@ def send_message(request):
     return JsonResponse({
         "status": "error"
     })
-
 
 def login_view(request):
 

@@ -11,46 +11,85 @@ function sendMessage() {
         "[name=csrfmiddlewaretoken]"
     ).value;
 
-    fetch("{% url 'send_message' %}", {
+    fetch("/send-message/", {
+
         method: "POST",
+
         headers: {
             "X-CSRFToken": csrfToken
         },
+
         body: new URLSearchParams({
             message: message,
-            receiver_id:"{{receiver.id}}"
+            receiver_id: "{{ receiver.id }}"
         })
+
     })
+
     .then(response => {
-        console.log("Django response:", response.status);
+
+        console.log(
+            "Django response:",
+            response.status
+        );
+
         return response.json();
+
     })
+
     .then(data => {
-        console.log("Django data:", data);
+
+        console.log(
+            "Django data:",
+            data
+        );
+
+        if (data.status === "success") {
+
+            let messages =
+                document.getElementById("messages");
+
+            let newMessage =
+                document.createElement("div");
+
+            newMessage.className = "sent";
+
+            newMessage.innerText = message;
+
+            messages.appendChild(newMessage);
+
+            input.value = "";
+
+        }
+
     })
+
     .catch(error => {
-        console.error("Error:", error);
+
+        console.error(
+            "Error:",
+            error
+        );
+
     });
-
-    let messages = document.getElementById("messages");
-
-    let newMessage = document.createElement("div");
-
-    newMessage.className = "sent";
-    newMessage.innerText = message;
-
-    messages.appendChild(newMessage);
-
-    input.value = "";
 }
 
 
-let input = document.getElementById("messageInput");
+let input =
+    document.getElementById("messageInput");
 
-input.addEventListener("keydown", function(event) {
 
-    if (event.key === "Enter") {
-        sendMessage();
+input.addEventListener(
+    "keydown",
+    function(event) {
+
+        if (event.key === "Enter") {
+
+            event.preventDefault();
+
+            sendMessage();
+
+        }
+
     }
-
-});
+);
