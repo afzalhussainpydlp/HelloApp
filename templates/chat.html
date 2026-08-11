@@ -1,17 +1,21 @@
 {% load static %}
-{% csrf_token %}
 
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <title>Afzal Chat</title>
-     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Chat</title>
+<link rel="stylesheet" href="{% static 'css/style.css' %}"> 
+
 </head>
 
 <body>
 
     <!-- Chat Navbar -->
+
     <div class="chat-navbar">
 
         <span class="back">←</span>
@@ -21,44 +25,169 @@
         </div>
 
         <div class="chat-user">
-            <h3>Afzal</h3>
+
+            <h3>{{ receiver.username }}</h3>
+
             <p>online</p>
+
         </div>
 
     </div>
 
 
-    
     <!-- Messages -->
-<div class="messages" id="messages">
 
-  {% for message in messages %}
+    <div id="messages" class="messages">
 
-    <div class="received">
+        {% for message in messages %}
 
-        <strong>{{ message.sender }}</strong>
+            <div class="received">
 
-        <div>
-            {{ message.text }}
-        </div>
+                <strong>{{ message.sender }}</strong>
 
-        <small>
-            {{ message.created_at|date:"h:i A" }}
-        </small>
+                <div>
+                    {{ message.text }}
+                </div>
+
+                <small>
+                    {{ message.created_at|date:"h:i A" }}
+                </small>
+
+            </div>
+
+        {% endfor %}
 
     </div>
-
-{% endfor %}
-
-
 
 
     <!-- Message Input -->
-  <div class="message-input">
-   <input type="text" id="messageInput" placeholder="type a message">
-   <button onclick="sendMessage()">➤</button>
-   </div>
-     <script src="{% static 'js/chat.js' %}"></script>
-</body>
 
+    <form id="messageForm" class="message-input">
+
+        {% csrf_token %}
+
+        <input
+            type="text"
+            id="messageInput"
+            placeholder="Type a message..."
+            autocomplete="off"
+        >
+
+        <button type="submit">➤</button>
+
+    </form>
+
+
+    <!-- JavaScript -->
+
+    <script>
+
+        function sendMessage() {
+
+            let input = document.getElementById("messageInput");
+
+            let message = input.value;
+
+            if (message.trim() === "") {
+                return;
+            }
+
+
+            let csrfToken = document.querySelector(
+                "[name=csrfmiddlewaretoken]"
+            ).value;
+
+
+            fetch("{% url 'send_message' %}", {
+
+                method: "POST",
+
+                headers: {
+                    "X-CSRFToken": csrfToken
+                },
+
+                body: new URLSearchParams({
+
+                    message: message,
+
+                    receiver_id: "{{ receiver.id }}"
+
+                })
+
+            })
+
+            .then(response => {
+
+                console.log(
+                    "Django response:",
+                    response.status
+                );
+
+                return response.json();
+
+            })
+
+            .then(data => {
+
+                console.log(
+                    "Django data:",
+                    data
+                );
+
+
+                if (data.status === "success") {
+
+                    let messages =
+                        document.getElementById("messages");
+
+
+                    let newMessage =
+                        document.createElement("div");
+
+
+                    newMessage.className = "sent";
+
+
+                    newMessage.innerText = message;
+
+
+                    messages.appendChild(newMessage);
+
+
+                    input.value = "";
+
+                }
+
+            })
+
+            .catch(error => {
+
+                console.error(
+                    "Error:",
+                    error
+                );
+
+            });
+
+        }
+
+
+        let form =
+            document.getElementById("messageForm");
+
+
+        form.addEventListener(
+            "submit",
+            function(event) {
+
+                event.preventDefault();
+
+                sendMessage();
+
+            }
+        );
+
+    </script>
+
+</body>
 </html>

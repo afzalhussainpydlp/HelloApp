@@ -11,13 +11,14 @@ function sendMessage() {
         "[name=csrfmiddlewaretoken]"
     ).value;
 
-    fetch("/send-message/", {
+    fetch("{% url 'send_message' %}", {
         method: "POST",
         headers: {
             "X-CSRFToken": csrfToken
         },
         body: new URLSearchParams({
-            message: message
+            message: message,
+            receiver_id:"{{receiver.id}}"
         })
     })
     .then(response => {
