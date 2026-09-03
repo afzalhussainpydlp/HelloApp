@@ -2,17 +2,21 @@
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Chat</title>
-<link rel="stylesheet" href="{% static 'css/style.css' %}"> 
+
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
 
 </head>
 
 <body>
+
 
     <!-- Chat Navbar -->
 
@@ -41,19 +45,39 @@
 
         {% for message in messages %}
 
-            <div class="received">
+            {% if message.sender_user == request.user %}
 
-                <strong>{{ message.sender }}</strong>
+                <!-- My Message -->
 
-                <div>
-                    {{ message.text }}
+                <div class="sent">
+
+                    <div>
+                        {{ message.text }}
+                    </div>
+
+                    <small>
+                        {{ message.created_at|date:"h:i A" }}
+                    </small>
+
                 </div>
 
-                <small>
-                    {{ message.created_at|date:"h:i A" }}
-                </small>
+            {% else %}
 
-            </div>
+                <!-- Other User Message -->
+
+                <div class="received">
+
+                    <div>
+                        {{ message.text }}
+                    </div>
+
+                    <small>
+                        {{ message.created_at|date:"h:i A" }}
+                    </small>
+
+                </div>
+
+            {% endif %}
 
         {% endfor %}
 
@@ -84,18 +108,21 @@
 
         function sendMessage() {
 
-            let input = document.getElementById("messageInput");
+            let input =
+                document.getElementById("messageInput");
 
             let message = input.value;
+
 
             if (message.trim() === "") {
                 return;
             }
 
 
-            let csrfToken = document.querySelector(
-                "[name=csrfmiddlewaretoken]"
-            ).value;
+            let csrfToken =
+                document.querySelector(
+                    "[name=csrfmiddlewaretoken]"
+                ).value;
 
 
             fetch("{% url 'send_message' %}", {
@@ -103,7 +130,9 @@
                 method: "POST",
 
                 headers: {
+
                     "X-CSRFToken": csrfToken
+
                 },
 
                 body: new URLSearchParams({
@@ -138,11 +167,15 @@
                 if (data.status === "success") {
 
                     let messages =
-                        document.getElementById("messages");
+                        document.getElementById(
+                            "messages"
+                        );
 
 
                     let newMessage =
-                        document.createElement("div");
+                        document.createElement(
+                            "div"
+                        );
 
 
                     newMessage.className = "sent";
@@ -151,7 +184,9 @@
                     newMessage.innerText = message;
 
 
-                    messages.appendChild(newMessage);
+                    messages.appendChild(
+                        newMessage
+                    );
 
 
                     input.value = "";
@@ -173,7 +208,9 @@
 
 
         let form =
-            document.getElementById("messageForm");
+            document.getElementById(
+                "messageForm"
+            );
 
 
         form.addEventListener(
@@ -189,5 +226,7 @@
 
     </script>
 
+
 </body>
+
 </html>

@@ -1,38 +1,24 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Login</title>
-</head>
+def login_view(request):
 
-<body>
+    if request.method == "POST":
 
-    <h2>Login</h2>
+        username = request.POST.get("username")
+        password = request.POST.get("password")
 
-    <form method="POST">
+        user = authenticate(
+            request,
+            username=username,
+            password=password
+        )
 
-        {% csrf_token %}
+        if user is not None:
 
-        <input
-            type="text"
-            name="username"
-            placeholder="Username"
-            required
-        >
+            login(request, user)
 
-        <br><br>
+            return redirect("home")
 
-        <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            required
-        >
+        return render(request, "login.html", {
+            "error": "Invalid username or password"
+        })
 
-        <br><br>
-
-        <button type="submit">Login</button>
-
-    </form>
-
-</body>
-</html>
+    return render(request, "login.html")
