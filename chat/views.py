@@ -10,6 +10,8 @@ def home(request):
     if not request.user.is_authenticated:
         return redirect("login")
 
+    print("CURRENT USER:", request.user.username)
+
     users = User.objects.exclude(
         id=request.user.id
     )
@@ -23,6 +25,8 @@ def chat_page(request, user_id):
 
     if not request.user.is_authenticated:
         return redirect("login")
+
+    print("CURRENT USER:", request.user.username)
 
     receiver = get_object_or_404(
         User,
@@ -71,6 +75,15 @@ def send_message(request):
             text=text
         )
 
+        print(
+            "MESSAGE:",
+            request.user.username,
+            "→",
+            receiver.username,
+            ":",
+            text
+        )
+
         return JsonResponse({
             "status": "success"
         })
@@ -96,6 +109,8 @@ def login_view(request):
         if user is not None:
 
             login(request, user)
+
+            print("LOGIN USER:", user.username)
 
             return JsonResponse({
                 "status": "success"

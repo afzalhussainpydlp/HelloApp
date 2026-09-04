@@ -1,73 +1,19 @@
+/* =========================
+   GENERAL
+========================= */
+
 body {
-    background-color: #b90b05;
-    margin: 0;
-
-}
-
-h1{
-    background-color: #25d366;
-    color:white;
-    padding:20px;
-}
-
-body{
     background-color: #ece5dd;
     margin: 0;
     font-family: Arial, sans-serif;
 }
 
-h1{
-    background-color: #25D366;
-    color: white;
-    margin: 0;
-    padding: 15px;
-}
 
-.chat{
-    display: flex;
-    align-items: center;
-    background-color: white;
-    margin: 15px;
-    padding: 15px;
-    border-radius: 10px;
-}
+/* =========================
+   HOME NAVBAR
+========================= */
 
-
-.message h3{
-    margin: 0;
-}
-
-.message p{
-    margin-top: 5px;
-    color: gray;
-}
-
-.time{
-    margin-left: auto;
-    color: gray;
-    font-size: 12px;
-}
-.navbar{
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    background-color: #25D366;
-    color: white;
-
-    padding: 15px 20px;
-}
-
-.navbar h1{
-    margin: 0;
-}
-
-.icons span{
-    font-size: 24px;
-    margin-left: 20px;
-    cursor: pointer;
-}
-.navbar{
+.navbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -76,24 +22,26 @@ h1{
     padding: 15px 20px;
 }
 
-.navbar h1{
+.navbar h1 {
     margin: 0;
 }
 
-.icons span{
+.icons span {
     font-size: 22px;
     margin-left: 15px;
     cursor: pointer;
 }
-.chat:hover{
-    background-color:#f5f5f5;
-    cursor:pointer;
-}
-.search-box{
+
+
+/* =========================
+   SEARCH BOX
+========================= */
+
+.search-box {
     padding: 15px;
 }
 
-.search-box input{
+.search-box input {
     width: 100%;
     padding: 12px;
     border: none;
@@ -104,23 +52,78 @@ h1{
 }
 
 
-.profile{
+/* =========================
+   HOME CHAT LIST
+========================= */
+
+.chat {
+    display: flex;
+    align-items: center;
+    background-color: white;
+    margin: 15px;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+.chat:hover {
+    background-color: #f5f5f5;
+    cursor: pointer;
+}
+
+.chat-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+
+/* =========================
+   PROFILE
+========================= */
+
+.profile {
     margin-right: 15px;
 }
 
-.profile-img{
+.profile-img {
     width: 50px;
     height: 50px;
     border-radius: 50%;
     object-fit: cover;
 }
 
-.time{
-    margin-left: auto;
-    text-align: right;
+
+/* =========================
+   CHAT LIST MESSAGE
+========================= */
+
+.message h3 {
+    margin: 0;
 }
 
-.badge{
+.message p {
+    margin-top: 5px;
+    color: gray;
+}
+
+
+/* =========================
+   CHAT LIST TIME
+========================= */
+
+.time {
+    margin-left: auto;
+    text-align: right;
+    color: gray;
+    font-size: 12px;
+}
+
+
+/* =========================
+   UNREAD BADGE
+========================= */
+
+.badge {
     background-color: #25D366;
     color: white;
     width: 22px;
@@ -133,13 +136,10 @@ h1{
     margin-top: 8px;
 }
 
-.chat-link{
-    text-decoration: none;
-    color: inherit;
-    display: block;
-}
 
-/* Chat Navbar */
+/* =========================
+   CHAT NAVBAR
+========================= */
 
 .chat-navbar {
     display: flex;
@@ -169,12 +169,26 @@ h1{
     margin: 3px 0 0;
     font-size: 12px;
 }
-/* Messages Area */
+
+
+/* =========================
+   MESSAGES AREA
+========================= */
 
 .messages {
     padding: 15px;
+    
+    /* Space for fixed message input */
+    padding-bottom: 100px;
+
     min-height: 400px;
+    box-sizing: border-box;
 }
+
+
+/* =========================
+   RECEIVED MESSAGE
+========================= */
 
 .received {
     background-color: white;
@@ -184,6 +198,11 @@ h1{
     max-width: 60%;
     border-radius: 10px;
 }
+
+
+/* =========================
+   SENT MESSAGE
+========================= */
 
 .sent {
     background-color: #d9fdd3;
@@ -195,40 +214,76 @@ h1{
     border-radius: 10px;
 }
 
-/* Message Input */
+
+/* =========================
+   MESSAGE INPUT
+========================= */
 
 .message-input {
     display: flex;
     align-items: center;
     gap: 10px;
+
     padding: 10px 15px;
+
     background-color: #f0f0f0;
+
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
+
+    box-sizing: border-box;
 }
+
+
+/* =========================
+   INPUT BOX
+========================= */
 
 .message-input input {
     flex: 1;
+
     padding: 12px 15px;
+
     border: none;
     border-radius: 25px;
+
     outline: none;
+
     font-size: 16px;
 }
+
+
+/* =========================
+   SEND BUTTON
+========================= */
 
 .message-input button {
     width: 45px;
     height: 45px;
+
     border: none;
     border-radius: 50%;
+
     background-color: #25D366;
+
     color: white;
+
     font-size: 20px;
+
     cursor: pointer;
 }
 
 .message-input button:hover {
     background-color: #20bd5a;
+}
+
+
+/* =========================
+   EXTRA BOTTOM SPACE
+========================= */
+
+body {
+    padding-bottom: 80px;
 }
