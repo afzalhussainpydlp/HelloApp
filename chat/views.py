@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
+
 from .models import Message
 
 
@@ -41,7 +42,6 @@ def chat_page(request, user_id):
         receiver_user=request.user
     )
 
-    # Messages ko old → new order mein dikhayega
     messages = messages.order_by("created_at")
 
     return render(request, "chat.html", {
@@ -110,15 +110,22 @@ def login_view(request):
 
             login(request, user)
 
-            print("LOGIN USER:", user.username)
+            print(
+                "LOGIN USER:",
+                user.username
+            )
 
-            return JsonResponse({
-                "status": "success"
-            })
+            return redirect("home")
 
-        return JsonResponse({
-            "status": "error",
-            "message": "Invalid username or password"
+        return render(request, "login.html", {
+            "error": "Invalid username or password"
         })
 
     return render(request, "login.html")
+
+
+def logout_view(request):
+
+    logout(request)
+
+    return redirect("login")
