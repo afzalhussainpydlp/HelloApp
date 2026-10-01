@@ -119,9 +119,9 @@ body {
 }
 
 
-/* =========================
+/*
    UNREAD BADGE
-========================= */
+ */
 
 .badge {
     background-color: #25D366;
@@ -137,9 +137,9 @@ body {
 }
 
 
-/* =========================
+/* 
    CHAT NAVBAR
-========================= */
+ */
 
 .chat-navbar {
     display: flex;
@@ -171,9 +171,9 @@ body {
 }
 
 
-/* =========================
+/* 
    MESSAGES AREA
-========================= */
+*/
 
 .messages {
     padding: 15px;
@@ -186,9 +186,9 @@ body {
 }
 
 
-/* =========================
+/* 
    RECEIVED MESSAGE
-========================= */
+ */
 
 .received {
     background-color: white;
@@ -200,9 +200,9 @@ body {
 }
 
 
-/* =========================
+/* 
    SENT MESSAGE
-========================= */
+   */
 
 .sent {
     background-color: #d9fdd3;
@@ -215,9 +215,9 @@ body {
 }
 
 
-/* =========================
+/* 
    MESSAGE INPUT
-========================= */
+*/
 
 .message-input {
     display: flex;
@@ -237,9 +237,9 @@ body {
 }
 
 
-/* =========================
+/* 
    INPUT BOX
-========================= */
+*/
 
 .message-input input {
     flex: 1;
@@ -255,9 +255,9 @@ body {
 }
 
 
-/* =========================
+/* 
    SEND BUTTON
-========================= */
+ */
 
 .message-input button {
     width: 45px;
@@ -280,10 +280,72 @@ body {
 }
 
 
-/* =========================
+/* 
    EXTRA BOTTOM SPACE
-========================= */
+*/
 
 body {
     padding-bottom: 80px;
+}
+/* ============================= */
+/* CHAT MESSAGES */
+/* ============================= */
+
+.messages {
+    padding: 15px;
+    height: calc(100vh - 130px);
+    overflow-y: auto;
+}
+
+
+/* ============================= */
+/* MY MESSAGE */
+/* ============================= */
+
+.sent {
+    max-width: 70%;
+    margin-left: auto;
+    margin-bottom: 10px;
+
+    background: #d9fdd3;
+    padding: 8px 10px;
+
+    border-radius: 10px 10px 0 10px;
+
+    width: fit-content;
+}
+
+
+/* ============================= */
+/* OTHER USER MESSAGE */
+/* ============================= */
+
+.received {
+    max-width: 70%;
+    margin-right: auto;
+    margin-bottom: 10px;
+
+    background: white;
+    padding: 8px 10px;
+
+    border-radius: 10px 10px 10px 0;
+
+    width: fit-content;
+}
+
+
+/* ============================= */
+/* MESSAGE TIME */
+/* ============================= */
+
+.sent small,
+.received small {
+    display: block;
+
+    text-align: right;
+
+    margin-top: 4px;
+
+    font-size: 11px;
+    color: gray;
 }

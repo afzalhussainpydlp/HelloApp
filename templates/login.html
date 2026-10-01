@@ -1,49 +1,206 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log in — HelloApp</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#160f1e;
+    --panel:#1f1729;
+    --line:#33283f;
+    --white:#faf8fc;
+    --dim:#9c8fae;
+    --coral:#ff6a5c;
+    --gold:#ffc861;
+    --sans:'Inter',sans-serif;
+    --head:'Sora',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    min-height:100vh;
+    background:var(--ink);
+    color:var(--white);
+    font-family:var(--sans);
+    display:flex;
+  }
+  a{color:inherit;}
 
-    <title>Login - HelloApp</title>
+  /* ===== left: brand + conversation demo ===== */
+  .brand-side{
+    flex:1;
+    padding:56px 60px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    background:
+      radial-gradient(500px 400px at 15% 90%, rgba(255,106,92,0.16), transparent 65%),
+      radial-gradient(420px 360px at 90% 5%, rgba(255,200,97,0.10), transparent 60%);
+    position:relative;
+    overflow:hidden;
+  }
+  .wordmark{font-family:var(--head);font-weight:700;font-size:20px;display:flex;align-items:center;gap:9px;}
+  .wordmark .mark{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--coral),var(--gold));flex-shrink:0;}
+
+  .pitch{max-width:30ch;}
+  .pitch h1{font-family:var(--head);font-weight:600;font-size:clamp(26px,3vw,34px);line-height:1.28;}
+
+  .thread{margin-top:44px;display:flex;flex-direction:column;gap:10px;max-width:340px;}
+  .bubble{
+    padding:12px 16px;border-radius:16px;font-size:14.5px;line-height:1.4;
+    opacity:0;transform:translateY(10px) scale(0.96);
+    animation:pop 0.5s cubic-bezier(.2,.8,.3,1) forwards;
+  }
+  .bubble.them{align-self:flex-start;background:var(--panel);border:1px solid var(--line);border-bottom-left-radius:4px;}
+  .bubble.me{align-self:flex-end;background:linear-gradient(135deg,var(--coral),#ff8a6f);color:#1a0f0c;border-bottom-right-radius:4px;font-weight:500;}
+  .bubble:nth-child(1){animation-delay:0.3s;}
+  .bubble:nth-child(2){animation-delay:1.0s;}
+  .bubble:nth-child(3){animation-delay:1.7s;}
+  .bubble:nth-child(4){animation-delay:2.4s;}
+  @keyframes pop{to{opacity:1;transform:translateY(0) scale(1);}}
+
+  .typing{align-self:flex-start;display:flex;gap:4px;padding:12px 16px;background:var(--panel);border:1px solid var(--line);border-radius:16px;border-bottom-left-radius:4px;width:fit-content;opacity:0;animation:pop 0.4s forwards;animation-delay:3.1s;}
+  .typing span{width:6px;height:6px;border-radius:50%;background:var(--dim);animation:bounce 1.2s infinite;}
+  .typing span:nth-child(2){animation-delay:0.15s;}
+  .typing span:nth-child(3){animation-delay:0.3s;}
+  @keyframes bounce{0%,60%,100%{transform:translateY(0);opacity:0.5;}30%{transform:translateY(-4px);opacity:1;}}
+
+  .brand-foot{font-size:13px;color:var(--dim);}
+
+  /* ===== right: form ===== */
+  .form-side{
+    width:440px;
+    flex-shrink:0;
+    background:var(--white);
+    color:var(--ink);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:40px;
+  }
+  .form-inner{width:100%;max-width:320px;}
+  .form-inner h2{font-family:var(--head);font-size:24px;font-weight:600;}
+  .form-inner .sub{color:#6b6178;font-size:14px;margin-top:8px;margin-bottom:36px;}
+
+  .server-error{
+    background:#fff0ee;border:1px solid #ffc9c2;color:#b3392b;
+    padding:10px 14px;border-radius:10px;font-size:13.5px;margin-bottom:20px;
+  }
+
+  .field{position:relative;margin-bottom:22px;}
+  .field input{
+    width:100%;padding:16px 14px 8px;font-size:15px;font-family:var(--sans);
+    border:1.5px solid #e4dfeb;border-radius:10px;background:#fff;color:var(--ink);
+    outline:none;transition:border-color .2s ease;
+  }
+  .field input:focus{border-color:var(--coral);}
+  .field label{
+    position:absolute;left:14px;top:16px;color:#948aa3;font-size:15px;
+    pointer-events:none;transition:all .18s ease;
+  }
+  .field input:focus + label,
+  .field input:not(:placeholder-shown) + label{
+    top:6px;font-size:11px;color:var(--coral);
+  }
+  .field input::placeholder{color:transparent;}
+
+  .pw-toggle{
+    position:absolute;right:12px;top:14px;background:none;border:none;
+    font-size:12px;color:#948aa3;font-family:var(--sans);cursor:pointer;padding:4px 6px;
+  }
+  .pw-toggle:hover{color:var(--coral);}
+
+  .row-between{display:flex;justify-content:space-between;align-items:center;margin:-6px 0 26px;font-size:13px;}
+  .remember{display:flex;align-items:center;gap:7px;color:#6b6178;}
+  .remember input{accent-color:var(--coral);}
+  .forgot{color:var(--coral);text-decoration:none;font-weight:500;}
+  .forgot:hover{text-decoration:underline;}
+
+  .submit{
+    width:100%;padding:15px;border:none;border-radius:10px;
+    background:var(--ink);color:var(--white);font-family:var(--head);font-weight:600;font-size:15px;
+    cursor:pointer;transition:transform .15s ease, background .2s ease;
+  }
+  .submit:hover{background:#2a1e37;transform:translateY(-2px);}
+  .submit:active{transform:translateY(0);}
+
+  .signup-line{margin-top:28px;text-align:center;font-size:13.5px;color:#6b6178;}
+  .signup-line a{color:var(--coral);font-weight:600;text-decoration:none;}
+  .signup-line a:hover{text-decoration:underline;}
+
+  @media(max-width:840px){
+    body{flex-direction:column;}
+    .brand-side{padding:36px 28px;min-height:280px;}
+    .thread{display:none;}
+    .form-side{width:100%;padding:36px 28px 56px;}
+  }
+</style>
 </head>
-
 <body>
 
-    <h2>Login</h2>
+<div class="brand-side">
+  <div class="wordmark"><span class="mark"></span>HelloApp</div>
+
+  <div>
+    <div class="pitch">
+      <h1>Message the moment it happens.</h1>
+    </div>
+    <div class="thread">
+      <div class="bubble them">hey, you free tonight?</div>
+      <div class="bubble me">yeah! what's up</div>
+      <div class="bubble them">group project call at 9, you in?</div>
+      <div class="bubble me">count me in 🙌</div>
+      <div class="typing"><span></span><span></span><span></span></div>
+    </div>
+  </div>
+
+  <div class="brand-foot">Built with Django &amp; WebSockets for real-time delivery.</div>
+</div>
+
+<div class="form-side">
+  <div class="form-inner">
+    <h2>Welcome back</h2>
+    <p class="sub">Log in to keep the conversation going.</p>
 
     {% if error %}
-        <p>{{ error }}</p>
+      <div class="server-error">{{ error }}</div>
     {% endif %}
 
-    <form method="POST">
+    <form method="POST" action="">
+      {% csrf_token %}
 
-        {% csrf_token %}
+      <div class="field">
+        <input type="text" id="username" name="username" placeholder=" " required>
+        <label for="username">Username</label>
+      </div>
 
-        <input
-            type="text"
-            name="username"
-            placeholder="Username"
-            required
-        >
+      <div class="field">
+        <input type="password" id="password" name="password" placeholder=" " required>
+        <label for="password">Password</label>
+        <button type="button" class="pw-toggle" onclick="togglePw()">Show</button>
+      </div>
 
-        <br><br>
+      <div class="row-between">
+        <label class="remember"><input type="checkbox" name="remember"> Remember me</label>
+        <a class="forgot" href="#">Forgot password?</a>
+      </div>
 
-        <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            required
-        >
-
-        <br><br>
-
-        <button type="submit">
-            Login
-        </button>
-
+      <button class="submit" type="submit">Log in</button>
     </form>
 
-</body>
+    <div class="signup-line">New to HelloApp? <a href="#">Create an account</a></div>
+  </div>
+</div>
 
+<script>
+  function togglePw(){
+    const pw = document.getElementById('password');
+    const btn = document.querySelector('.pw-toggle');
+    if(pw.type === 'password'){ pw.type = 'text'; btn.textContent = 'Hide'; }
+    else{ pw.type = 'password'; btn.textContent = 'Show'; }
+  }
+</script>
+
+</body>
 </html>

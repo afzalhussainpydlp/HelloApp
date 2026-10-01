@@ -4,16 +4,26 @@
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
     <title>Chat</title>
 
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet"
+          href="{% static 'css/style.css' %}">
+
 </head>
 
 <body>
 
-    <!-- Chat Navbar -->
+
+    <!-- ============================= -->
+    <!-- CHAT NAVBAR -->
+    <!-- ============================= -->
+
     <div class="chat-navbar">
 
         <span class="back">←</span>
@@ -23,22 +33,31 @@
         </div>
 
         <div class="chat-user">
+
             <h3>{{ receiver.username }}</h3>
-            <p>online</p>
+
+            <p id="user-status">offline</p>
+
         </div>
 
     </div>
 
 
-    <!-- Messages -->
-    <div id="messages" class="messages">
+    <!-- ============================= -->
+    <!-- MESSAGES -->
+    <!-- ============================= -->
+
+    <div id="messages"
+         class="messages">
 
         {% for message in messages %}
 
             {% if message.sender_user == request.user %}
 
                 <!-- My Message -->
+
                 <div class="sent">
+
                     <div>
                         {{ message.text }}
                     </div>
@@ -46,12 +65,15 @@
                     <small>
                         {{ message.created_at|date:"h:i A" }}
                     </small>
+
                 </div>
 
             {% else %}
 
                 <!-- Other User Message -->
+
                 <div class="received">
+
                     <div>
                         {{ message.text }}
                     </div>
@@ -59,6 +81,7 @@
                     <small>
                         {{ message.created_at|date:"h:i A" }}
                     </small>
+
                 </div>
 
             {% endif %}
@@ -68,8 +91,12 @@
     </div>
 
 
-    <!-- Message Input -->
-    <form id="messageForm" class="message-input">
+    <!-- ============================= -->
+    <!-- MESSAGE INPUT -->
+    <!-- ============================= -->
+
+    <form id="messageForm"
+          class="message-input">
 
         {% csrf_token %}
 
@@ -80,118 +107,278 @@
             autocomplete="off"
         >
 
-        <button type="submit">➤</button>
+        <button type="submit">
+            ➤
+        </button>
 
     </form>
 
 
-    <!-- JavaScript -->
+    <!-- ============================= -->
+    <!-- JAVASCRIPT -->
+    <!-- ============================= -->
+
     <script>
 
-        function sendMessage() {
 
-            let input = document.getElementById("messageInput");
+        // ==========================================
+        // 1. CREATE WEBSOCKET CONNECTION
+        // ==========================================
 
-            let message = input.value;
+        const socket = new WebSocket(
+            "ws://" +
+            window.location.host +
+            "/ws/chat/{{ receiver.id }}/"
+        );
 
-            if (message.trim() === "") {
-                return;
+
+        // ==========================================
+        // 2. WEBSOCKET CONNECTED
+        // ==========================================
+
+        socket.onopen = function(event) {
+
+            console.log(
+                "WebSocket connected"
+                  document.getElementById("user-status").innerText = "online";
+            );
+
+        };
+
+
+        // ==========================================
+        // 3. RECEIVE MESSAGE
+        // ==========================================
+
+        socket.onmessage = function(event) {
+
+            // Server se JSON data receive hua
+
+            const data =
+                JSON.parse(event.data);
+
+
+            console.log(
+                "Message from WebSocket:",
+                data
+            );
+
+
+            // Messages container
+
+            const messages =
+                document.getElementById(
+                    "messages"
+                );
+
+
+            // New message div
+
+            const newMessage =
+                document.createElement(
+                    "div"
+                );
+
+
+            // ======================================
+            // SENDER CHECK
+            // ======================================
+
+            if (
+                data.sender_id ==
+                {{ request.user.id }}
+            ) {
+
+                // Message mera hai
+
+                newMessage.className =
+                    "sent";
+
+            } else {
+
+                // Message dusre user ka hai
+
+                newMessage.className =
+                    "received";
+
             }
 
 
-            let csrfToken = document.querySelector(
-                "[name=csrfmiddlewaretoken]"
-            ).value;
+            // ======================================
+            // MESSAGE TEXT
+            // ======================================
+
+            const messageText =
+                document.createElement(
+                    "div"
+                );
 
 
-            fetch("{% url 'send_message' %}", {
+            messageText.innerText =
+                data.message;
 
-                method: "POST",
 
-                headers: {
-                    "X-CSRFToken": csrfToken
-                },
+            // ======================================
+            // TIME
+            // ======================================
 
-                body: new URLSearchParams({
+            const time =
+                document.createElement(
+                    "small"
+                );
 
-                    message: message,
 
-                    receiver_id: "{{ receiver.id }}"
+            const now =
+                new Date();
 
+
+            time.innerText =
+                now.toLocaleTimeString(
+                    [],
+                    {
+                        hour: "2-digit",
+                        minute: "2-digit"
+                    }
+                );
+
+
+            // ======================================
+            // ADD TEXT + TIME
+            // ======================================
+
+            newMessage.appendChild(
+                messageText
+            );
+
+            newMessage.appendChild(
+                time
+            );
+
+
+            // ======================================
+            // ADD MESSAGE TO CHAT
+            // ======================================
+
+            messages.appendChild(
+                newMessage
+            );
+
+
+            // ======================================
+            // SCROLL TO BOTTOM
+            // ======================================
+
+            messages.scrollTop =
+                messages.scrollHeight;
+
+        };
+
+
+        // ==========================================
+        // 4. WEBSOCKET DISCONNECTED
+        // ==========================================
+
+        socket.onclose = function(event) {
+
+            console.log(
+                "WebSocket disconnected"
+            );
+
+        };
+
+
+        // ==========================================
+        // 5. WEBSOCKET ERROR
+        // ==========================================
+
+        socket.onerror = function(error) {
+
+            console.error(
+                "WebSocket error:",
+                error
+            );
+
+        };
+
+
+        // ==========================================
+        // 6. SEND MESSAGE
+        // ==========================================
+
+        function sendMessage() {
+
+            // Input box ko select karna
+
+            const input =
+                document.getElementById(
+                    "messageInput"
+                );
+
+
+            // Input ke andar ka text lena
+
+            const message =
+                input.value;
+
+
+            // Empty message nahi bhejna
+
+            if (
+                message.trim() === ""
+            ) {
+
+                return;
+
+            }
+
+
+            // ======================================
+            // WEBSOCKET SE MESSAGE SEND
+            // ======================================
+
+            socket.send(
+                JSON.stringify({
+                    message: message
                 })
-
-            })
-
-            .then(response => {
-
-                console.log(
-                    "Django response:",
-                    response.status
-                );
-
-                return response.json();
-
-            })
-
-            .then(data => {
-
-                console.log(
-                    "Django data:",
-                    data
-                );
+            );
 
 
-                if (data.status === "success") {
+            // Message send hone ke baad
+            // input box empty karna
 
-                    let messages =
-                        document.getElementById("messages");
-
-
-                    let newMessage =
-                        document.createElement("div");
-
-
-                    newMessage.className = "sent";
-
-
-                    newMessage.innerText = message;
-
-
-                    messages.appendChild(newMessage);
-
-
-                    input.value = "";
-
-                }
-
-            })
-
-            .catch(error => {
-
-                console.error(
-                    "Error:",
-                    error
-                );
-
-            });
+            input.value = "";
 
         }
 
 
-        let form =
-            document.getElementById("messageForm");
+        // ==========================================
+        // 7. FORM SUBMIT
+        // ==========================================
+
+        const form =
+            document.getElementById(
+                "messageForm"
+            );
 
 
         form.addEventListener(
             "submit",
             function(event) {
 
+                // Browser ko normal form submit
+                // karne se rokna
+
                 event.preventDefault();
+
+
+                // Hamara sendMessage function
+                // call karna
 
                 sendMessage();
 
             }
         );
+
 
     </script>
 
