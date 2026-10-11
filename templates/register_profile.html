@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile info — HelloApp</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--ink:#160f1e;--panel:#1f1729;--line:#33283f;--white:#faf8fc;--dim:#9c8fae;--coral:#ff6a5c;--gold:#ffc861;--sans:'Inter',sans-serif;--head:'Sora',sans-serif}
+body{min-height:100vh;background:var(--ink);color:var(--white);font-family:var(--sans);display:flex}
+a{color:inherit}
+.brand-side{flex:1;padding:56px 60px;display:flex;flex-direction:column;justify-content:space-between;background:radial-gradient(500px 400px at 15% 90%,rgba(255,106,92,.16),transparent 65%),radial-gradient(420px 360px at 90% 5%,rgba(255,200,97,.10),transparent 60%);overflow:hidden}
+.wordmark{font-family:var(--head);font-weight:700;font-size:20px;display:flex;align-items:center;gap:9px}
+.mark{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--coral),var(--gold))}
+.pitch{max-width:30ch}.pitch h1{font-family:var(--head);font-weight:600;font-size:clamp(26px,3vw,34px);line-height:1.28}
+.thread{margin-top:44px;display:flex;flex-direction:column;gap:10px;max-width:340px}
+.bubble{padding:12px 16px;border-radius:16px;font-size:14.5px;line-height:1.4;opacity:0;transform:translateY(10px) scale(.96);animation:pop .5s cubic-bezier(.2,.8,.3,1) forwards}
+.them{align-self:flex-start;background:var(--panel);border:1px solid var(--line);border-bottom-left-radius:4px}
+.me{align-self:flex-end;background:linear-gradient(135deg,var(--coral),#ff8a6f);color:#1a0f0c;border-bottom-right-radius:4px;font-weight:500}
+.bubble:nth-child(1){animation-delay:.3s}.bubble:nth-child(2){animation-delay:1s}.bubble:nth-child(3){animation-delay:1.7s}.bubble:nth-child(4){animation-delay:2.4s}
+@keyframes pop{to{opacity:1;transform:none}}
+.typing{align-self:flex-start;display:flex;gap:4px;padding:12px 16px;background:var(--panel);border:1px solid var(--line);border-radius:16px;border-bottom-left-radius:4px;opacity:0;animation:pop .4s forwards 3.1s}
+.typing span{width:6px;height:6px;border-radius:50%;background:var(--dim);animation:bounce 1.2s infinite}
+.typing span:nth-child(2){animation-delay:.15s}.typing span:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,60%,100%{transform:none;opacity:.5}30%{transform:translateY(-4px);opacity:1}}
+.brand-foot{font-size:13px;color:var(--dim)}
+.form-side{flex:1;background:var(--white);color:var(--ink);display:flex;align-items:center;justify-content:center;padding:40px}
+.form-inner{width:100%;max-width:360px}
+.form-inner h2{font-family:var(--head);font-size:24px;font-weight:600}
+.sub{color:#6b6178;font-size:14px;line-height:1.55;margin-top:8px;margin-bottom:30px}
+.big{font-size:54px;margin-bottom:14px}
+.err{background:#fdecea;color:#b3261e;border-radius:10px;padding:11px 14px;font-size:13.5px;margin:-14px 0 20px}
+.field{position:relative;margin-bottom:20px}
+.field input{width:100%;padding:16px 14px 8px;font-size:15px;font-family:var(--sans);border:1.5px solid #e4dfeb;border-radius:10px;background:#fff;color:var(--ink);outline:none;transition:border-color .2s}
+.field input:focus{border-color:var(--coral)}
+.field label{position:absolute;left:14px;top:16px;color:#948aa3;font-size:15px;pointer-events:none;transition:all .18s}
+.field input:focus+label,.field input:not(:placeholder-shown)+label{top:6px;font-size:11px;color:var(--coral)}
+.field input::placeholder{color:transparent}
+.pw-toggle{position:absolute;right:12px;top:14px;background:none;border:none;font-size:12px;color:#948aa3;font-family:var(--sans);cursor:pointer;padding:4px 6px}
+.pw-toggle:hover{color:var(--coral)}
+.submit{display:block;width:100%;text-align:center;text-decoration:none;padding:15px;border:none;border-radius:10px;background:var(--ink);color:var(--white);font-family:var(--head);font-weight:600;font-size:15px;cursor:pointer;transition:transform .15s,background .2s}
+.submit:hover{background:#2a1e37;transform:translateY(-2px)}
+.line{margin-top:26px;text-align:center;font-size:13.5px;color:#6b6178}
+.line a{color:var(--coral);font-weight:600;text-decoration:none}
+@media(max-width:840px){body{flex-direction:column}.brand-side{padding:36px 28px;min-height:280px}.thread{display:none}.form-side{flex:none;width:100%;padding:36px 28px 56px}}
+.cc{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:15px;color:#6b6178;font-weight:500;padding-right:10px;border-right:1.5px solid #e4dfeb}
+.field.ph input{padding-left:72px}.field.ph label{left:72px}
+.field.otp input{letter-spacing:12px;font-size:24px;text-align:center;padding:22px 14px 8px;font-weight:600}
+.field.otp label{left:0;right:0;text-align:center}
+.field.otp input:focus+label,.field.otp input:not(:placeholder-shown)+label{top:6px;font-size:11px}
+.hint{font-size:12.5px;color:#948aa3;margin:-8px 0 20px}
+
+.avatar{width:124px;height:124px;border-radius:50%;background:#efeaf5 center/cover no-repeat;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:40px;cursor:pointer;border:2px dashed #cbbfdc;transition:border-color .2s}
+.avatar:hover{border-color:var(--coral)}
+.note{text-align:center;font-size:12.5px;color:#948aa3;margin-bottom:24px}
+.hint a{color:var(--coral);font-weight:600;text-decoration:none}
+
+</style>
+</head>
+<body>
+<div class="brand-side">
+  <div class="wordmark"><span class="mark"></span>HelloApp</div>
+  <div>
+    <div class="pitch"><h1>Let your friends know who you are.</h1></div>
+    <div class="thread"><div class="bubble them">ye kaun hai? 😮</div><div class="bubble me">arre main hu, nayi DP lagayi</div><div class="bubble them">mast lag rahi hai!</div><div class="bubble me">shukriya 😎</div><div class="typing"><span></span><span></span><span></span></div></div>
+  </div>
+  <div class="brand-foot">Say hello. The world is listening.</div>
+</div>
+<div class="form-side">
+  <div class="form-inner">
+    <h2 style="text-align:center">Profile info</h2>
+    <p class="sub" style="text-align:center;margin-bottom:22px">Please provide your name and an optional profile photo.</p>
+    {% if error %}<div class="err">{{ error }}</div>{% endif %}
+    <form method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="avatar" id="av" onclick="document.getElementById('dp').click()">📷</div>
+      <input type="file" id="dp" name="dp" accept="image/*" hidden onchange="var f=this.files[0];if(f){var r=new FileReader();r.onload=function(e){var a=document.getElementById('av');a.style.backgroundImage='url('+e.target.result+')';a.textContent=''};r.readAsDataURL(f)}">
+      <p class="note">Tap the circle to add a photo (optional)</p>
+      <div class="field"><input type="text" id="full_name" name="full_name" placeholder=" " maxlength="25" required autofocus><label for="full_name">Your name</label></div>
+      <button class="submit" type="submit">Finish</button>
+    </form>
+  </div>
+</div>
+<script>function togglePw(id,b){var p=document.getElementById(id);if(p.type==="password"){p.type="text";b.textContent="Hide"}else{p.type="password";b.textContent="Show"}}</script>
+</body>
+</html>

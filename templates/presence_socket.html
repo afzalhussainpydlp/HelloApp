@@ -1,0 +1,34 @@
+{% if request.user.is_authenticated %}
+<script>
+    window.addEventListener("load", function () {
+        const proto = location.protocol === "https:" ? "wss://" : "ws://";
+        let fails = 0;
+
+        function connect() {
+            const ws = new WebSocket(proto + location.host + "/ws/presence/");
+            window.presenceSocket = ws;
+
+            ws.onopen = function () {
+                fails = 0;
+            };
+
+            // Server se jo bhi aaye, page ke baaki scripts ko event bana ke de do
+            ws.onmessage = function (e) {
+                document.dispatchEvent(
+                    new CustomEvent("presence", { detail: JSON.parse(e.data) })
+                );
+            };
+
+            // Net gaya ya server band hua toh dobara jud jao, par sirf 5 baar
+            ws.onclose = function () {
+                fails++;
+                if (fails <= 5) {
+                    setTimeout(connect, 3000 * fails);
+                }
+            };
+        }
+
+        connect();
+    });
+</script>
+{% endif %}

@@ -10,6 +10,77 @@
 
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 
+    <style>
+        /* ---- khaali chat list (naya user) ---- */
+        .empty-state{
+            text-align:center;
+            color:#667781;
+            margin-top:70px;
+            padding:0 24px;
+        }
+        .empty-state .icon{font-size:64px;margin-bottom:12px;}
+        .empty-state h3{color:#41525d;margin-bottom:6px;}
+
+        /* ---- hara "new chat" button ---- */
+        .fab{
+            position:fixed;
+            right:24px;
+            bottom:24px;
+            width:58px;
+            height:58px;
+            border:none;
+            border-radius:50%;
+            background:#25D366;
+            color:#fff;
+            font-size:26px;
+            cursor:pointer;
+            box-shadow:0 6px 16px rgba(0,0,0,.28);
+            z-index:20;
+        }
+        .fab:hover{background:#1ebe5a;}
+
+        /* ---- new chat popup ---- */
+        .overlay{
+            display:none;
+            position:fixed;
+            inset:0;
+            background:rgba(0,0,0,.45);
+            z-index:30;
+            align-items:center;
+            justify-content:center;
+            padding:20px;
+        }
+        .overlay.show{display:flex;}
+        .sheet{
+            background:#fff;
+            width:100%;
+            max-width:360px;
+            border-radius:16px;
+            padding:26px 24px;
+            box-shadow:0 14px 40px rgba(0,0,0,.3);
+        }
+        .sheet h3{color:#075E54;margin-bottom:6px;}
+        .sheet p.hint{color:#667781;font-size:14px;margin-bottom:16px;}
+        .phone-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+        .phone-row span{
+            font-weight:600;color:#41525d;
+            padding-right:10px;border-right:1.5px solid #d1d7db;
+        }
+        .phone-row input{
+            flex:1;font-size:16px;padding:12px;
+            border:1.5px solid #d1d7db;border-radius:10px;outline:none;
+        }
+        .phone-row input:focus{border-color:#25D366;}
+        .sheet .err{color:#b3261e;font-size:13.5px;margin-bottom:12px;}
+        .sheet .btns{display:flex;gap:10px;justify-content:flex-end;}
+        .sheet button{
+            padding:11px 20px;border:none;border-radius:24px;
+            font-size:15px;font-weight:600;cursor:pointer;
+        }
+        .sheet .cancel{background:#eef1f3;color:#41525d;}
+        .sheet .go{background:#25D366;color:#fff;}
+    </style>
+
 </head>
 
 <body>
@@ -33,19 +104,20 @@
     </div>
 
 
-    <!-- Search Box -->
+    <!-- Search Box: apni chats ke naam se dhundo -->
 
     <div class="search-box">
 
         <input
             type="text"
-            placeholder="Search or start new chat"
+            id="chatSearch"
+            placeholder="Search chats"
         >
 
     </div>
 
 
-    <!-- Users / Chats -->
+    <!-- Chats -->
 
     {% for user in users %}
 
@@ -54,17 +126,25 @@
             class="chat-link"
         >
 
-            <div class="chat">
+            <div class="chat" data-user-id="{{ user.id }}">
 
-                <!-- Profile -->
+                <!-- Profile (DP) -->
 
                 <div class="profile">
 
-                    <img
-                        class="profile-img"
-                        src="{% static 'images/profile.jpg.jpg' %}"
-                        alt="Profile"
-                    >
+                    {% if user.profile.dp %}
+                        <img
+                            class="profile-img"
+                            src="{{ user.profile.dp.url }}"
+                            alt="Profile"
+                        >
+                    {% else %}
+                        <img
+                            class="profile-img"
+                            src="{% static 'images/profile.jpg.jpg' %}"
+                            alt="Profile"
+                        >
+                    {% endif %}
 
                 </div>
 
@@ -74,12 +154,10 @@
                 <div class="message">
 
                     <h3>
-                        {{ user.username }}
+                        {% firstof user.profile.full_name user.username %}
                     </h3>
 
-                    <p>
-                        Start a conversation
-                    </p>
+                    <p class="preview">{% if user.last_message %}{% if user.last_message.sender_user_id == request.user.id %}You: {% endif %}{{ user.last_message.text|truncatechars:35 }}{% else %}Start a conversation{% endif %}</p>
 
                 </div>
 
@@ -89,7 +167,7 @@
                 <div class="time">
 
                     <div>
-                        —
+                        {% if user.last_message %}{{ user.last_message.created_at|date:"h:i A" }}{% else %}—{% endif %}
                     </div>
 
                 </div>
@@ -100,12 +178,135 @@
 
     {% empty %}
 
-        <p style="text-align: center;">
-            No users found.
-        </p>
+        <div class="empty-state">
+            <div class="icon">💬</div>
+            <h3>No chats yet</h3>
+            <p>Tap the green button to message a friend.</p>
+        </div>
 
     {% endfor %}
 
+
+    <!-- Hara "new chat" button -->
+
+    <button class="fab" id="fab" type="button" aria-label="New chat">💬</button>
+
+
+    <!-- New chat popup: phone number daalo -->
+
+    <div class="overlay {% if messages %}show{% endif %}" id="overlay">
+
+        <div class="sheet">
+
+            <h3>New chat</h3>
+            <p class="hint">Enter your friend's 10-digit phone number.</p>
+
+            {% for m in messages %}
+                <p class="err">{{ m }}</p>
+            {% endfor %}
+
+            <form action="{% url 'new_chat' %}" method="GET">
+
+                <div class="phone-row">
+                    <span>+91</span>
+                    <input
+                        type="tel"
+                        name="phone"
+                        id="phoneInput"
+                        placeholder="Phone number"
+                        maxlength="10"
+                        inputmode="numeric"
+                        required
+                    >
+                </div>
+
+                <div class="btns">
+                    <button type="button" class="cancel" id="cancelBtn">Cancel</button>
+                    <button type="submit" class="go">Start chat</button>
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    {% include "presence_socket.html" %}
+
+    <script>
+        // ---------- New chat popup kholna / band karna ----------
+        const overlay = document.getElementById("overlay");
+        const phoneInput = document.getElementById("phoneInput");
+
+        function openSheet() {
+            overlay.classList.add("show");
+            phoneInput.focus();
+        }
+
+        function closeSheet() {
+            overlay.classList.remove("show");
+        }
+
+        document.getElementById("fab").addEventListener("click", openSheet);
+        document.getElementById("cancelBtn").addEventListener("click", closeSheet);
+
+        overlay.addEventListener("click", function (e) {
+            if (e.target === overlay) {
+                closeSheet();
+            }
+        });
+
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "Escape") {
+                closeSheet();
+            }
+        });
+
+        // ---------- Apni chats mein naam se search ----------
+        document.getElementById("chatSearch").addEventListener("input", function () {
+            const q = this.value.toLowerCase();
+
+            document.querySelectorAll(".chat-link").forEach(function (link) {
+                link.style.display = link.textContent.toLowerCase().includes(q) ? "" : "none";
+            });
+        });
+
+        // ---------- Kisi ka "typing" aaye toh uske row mein "typing..." dikhao ----------
+        document.addEventListener("presence", function (e) {
+            const d = e.detail;
+
+            if (d.type !== "typing") {
+                return;
+            }
+
+            const row = document.querySelector('.chat[data-user-id="' + d.from_id + '"]');
+            if (!row) {
+                return;
+            }
+
+            const preview = row.querySelector(".preview");
+            if (!preview) {
+                return;
+            }
+
+            // Asli message yaad rakho, taaki typing ke baad wapas dikha sakein
+            if (preview.dataset.original === undefined) {
+                preview.dataset.original = preview.textContent;
+            }
+
+            preview.textContent = "typing...";
+            preview.style.color = "#25D366";
+
+            // 2.5 second tak naya typing na aaye toh wapas purana message dikhao
+            clearTimeout(preview._timer);
+            preview._timer = setTimeout(function () {
+                preview.textContent = preview.dataset.original;
+                preview.style.color = "";
+                delete preview.dataset.original;
+            }, 2500);
+        });
+    </script>
 
 </body>
 

@@ -1,200 +1,248 @@
 {% load static %}
-
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat</title>
-
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
-
 <body>
 
     <!-- Chat Navbar -->
     <div class="chat-navbar">
-
-        <span class="back">←</span>
+        <span class="back" onclick="history.back()">←</span>
 
         <div class="chat-profile">
-            👤
+            {% if receiver.profile.dp %}
+                <img
+                    src="{{ receiver.profile.dp.url }}"
+                    alt="Profile"
+                    style="width:40px;height:40px;border-radius:50%;object-fit:cover;display:block;"
+                >
+            {% else %}
+                👤
+            {% endif %}
         </div>
 
         <div class="chat-user">
-            <h3>{{ receiver.username }}</h3>
-            <p>online</p>
+            <h3>{% firstof receiver.profile.full_name receiver.username %}</h3>
+            <p id="user-status"></p>
         </div>
-
     </div>
-
 
     <!-- Messages -->
     <div id="messages" class="messages">
-
         {% for message in messages %}
-
             {% if message.sender_user == request.user %}
-
-                <!-- My Message -->
                 <div class="sent">
-                    <div>
-                        {{ message.text }}
-                    </div>
-
-                    <small>
-                        {{ message.created_at|date:"h:i A" }}
-                    </small>
+                    <div>{{ message.text }}</div>
+                    <small>{{ message.created_at|date:"h:i A" }}</small>
                 </div>
-
             {% else %}
-
-                <!-- Other User Message -->
                 <div class="received">
-                    <div>
-                        {{ message.text }}
-                    </div>
-
-                    <small>
-                        {{ message.created_at|date:"h:i A" }}
-                    </small>
+                    <div>{{ message.text }}</div>
+                    <small>{{ message.created_at|date:"h:i A" }}</small>
                 </div>
-
             {% endif %}
-
         {% endfor %}
-
     </div>
-
 
     <!-- Message Input -->
     <form id="messageForm" class="message-input">
-
         {% csrf_token %}
-
         <input
             type="text"
             id="messageInput"
             placeholder="Type a message..."
             autocomplete="off"
         >
-
         <button type="submit">➤</button>
-
     </form>
 
+    {% include "presence_socket.html" %}
 
-    <!-- JavaScript -->
     <script>
+        const currentUserId = Number("{{ request.user.id }}");
+        const receiverId = Number("{{ receiver.id }}");
 
-        function sendMessage() {
+        const statusElement = document.getElementById("user-status");
+        const messagesElement = document.getElementById("messages");
+        const messageInput = document.getElementById("messageInput");
+        const messageForm = document.getElementById("messageForm");
 
-            let input = document.getElementById("messageInput");
+        // =====================================================
+        //  ONLINE / LAST SEEN / TYPING (presence socket se)
+        // =====================================================
+        let isOnline = false;
+        let isTyping = false;
+        let ready = false;                         // pehla update aane tak status khaali rakho
+        let lastSeen = "{{ receiver_last_seen }}";
+        let typingTimer = null;
+        let lastTypingSent = 0;
 
-            let message = input.value;
+        function formatLastSeen(iso) {
+            if (!iso) return "offline";
 
-            if (message.trim() === "") {
+            const d = new Date(iso);
+            const now = new Date();
+            const yesterday = new Date();
+            yesterday.setDate(now.getDate() - 1);
+
+            const time = d.toLocaleTimeString([], {
+                hour: "numeric",
+                minute: "2-digit"
+            });
+
+            if (d.toDateString() === now.toDateString()) {
+                return "last seen today at " + time;
+            }
+            if (d.toDateString() === yesterday.toDateString()) {
+                return "last seen yesterday at " + time;
+            }
+            return "last seen " + d.toLocaleDateString() + " at " + time;
+        }
+
+        function renderStatus() {
+            if (!ready) {
+                statusElement.textContent = "";
+            } else if (isTyping) {
+                statusElement.textContent = "typing...";
+            } else if (isOnline) {
+                statusElement.textContent = "online";
+            } else {
+                statusElement.textContent = formatLastSeen(lastSeen);
+            }
+        }
+
+        // Agar presence se kuch na aaye, toh 2 second baad jo pata hai wahi dikhao
+        setTimeout(function () {
+            ready = true;
+            renderStatus();
+        }, 2000);
+
+        document.addEventListener("presence", function (e) {
+            const d = e.detail;
+
+            if (d.type === "snapshot") {
+                isOnline = d.online.includes(receiverId);
+                ready = true;
+            } else if (d.type === "update" && d.user_id === receiverId) {
+                isOnline = d.online;
+                if (!d.online) {
+                    isTyping = false;
+                    if (d.last_seen) lastSeen = d.last_seen;
+                }
+            } else if (d.type === "typing" && d.from_id === receiverId) {
+                isTyping = true;
+                clearTimeout(typingTimer);
+                typingTimer = setTimeout(function () {
+                    isTyping = false;
+                    renderStatus();
+                }, 2500);
+            }
+
+            renderStatus();
+        });
+
+        // Jab main type karu, toh saamne wale ko "typing" bhejo
+        messageInput.addEventListener("input", function () {
+            const now = Date.now();
+            const ws = window.presenceSocket;
+
+            if (now - lastTypingSent > 1500 && ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: "typing", to: receiverId }));
+                lastTypingSent = now;
+            }
+        });
+
+        // =====================================================
+        //  CHAT MESSAGES (chat socket se)
+        // =====================================================
+        let socketConnected = false;
+
+        const protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
+
+        const socket = new WebSocket(
+            protocol + window.location.host + "/ws/chat/" + receiverId + "/"
+        );
+
+        socket.onopen = function () {
+            socketConnected = true;
+            console.log("WebSocket connected");
+        };
+
+        socket.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+
+            console.log("WebSocket event:", data);
+
+            if (data.type !== "chat_message") {
                 return;
             }
 
+            // Saamne wale ka message aaya, matlab usne type karna band kar diya
+            if (Number(data.sender_id) !== currentUserId) {
+                isTyping = false;
+                renderStatus();
+            }
 
-            let csrfToken = document.querySelector(
-                "[name=csrfmiddlewaretoken]"
-            ).value;
+            const newMessage = document.createElement("div");
 
+            if (Number(data.sender_id) === currentUserId) {
+                newMessage.className = "sent";
+            } else {
+                newMessage.className = "received";
+            }
 
-            fetch("{% url 'send_message' %}", {
+            const messageText = document.createElement("div");
+            messageText.textContent = data.message;
 
-                method: "POST",
-
-                headers: {
-                    "X-CSRFToken": csrfToken
-                },
-
-                body: new URLSearchParams({
-
-                    message: message,
-
-                    receiver_id: "{{ receiver.id }}"
-
-                })
-
-            })
-
-            .then(response => {
-
-                console.log(
-                    "Django response:",
-                    response.status
-                );
-
-                return response.json();
-
-            })
-
-            .then(data => {
-
-                console.log(
-                    "Django data:",
-                    data
-                );
-
-
-                if (data.status === "success") {
-
-                    let messages =
-                        document.getElementById("messages");
-
-
-                    let newMessage =
-                        document.createElement("div");
-
-
-                    newMessage.className = "sent";
-
-
-                    newMessage.innerText = message;
-
-
-                    messages.appendChild(newMessage);
-
-
-                    input.value = "";
-
-                }
-
-            })
-
-            .catch(error => {
-
-                console.error(
-                    "Error:",
-                    error
-                );
-
+            const time = document.createElement("small");
+            time.textContent = new Date().toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit"
             });
 
-        }
+            newMessage.appendChild(messageText);
+            newMessage.appendChild(time);
+            messagesElement.appendChild(newMessage);
 
+            messagesElement.scrollTop = messagesElement.scrollHeight;
+        };
 
-        let form =
-            document.getElementById("messageForm");
+        socket.onerror = function (error) {
+            console.error("WebSocket error:", error);
+        };
 
+        socket.onclose = function () {
+            socketConnected = false;
+            console.log("WebSocket disconnected");
+        };
 
-        form.addEventListener(
-            "submit",
-            function(event) {
+        messageForm.addEventListener("submit", function (event) {
+            event.preventDefault();
 
-                event.preventDefault();
+            const message = messageInput.value.trim();
 
-                sendMessage();
-
+            if (message === "") {
+                return;
             }
-        );
 
+            if (!socketConnected || socket.readyState !== WebSocket.OPEN) {
+                alert("Connection nahi hai. Page refresh karke dobara try karo.");
+                return;
+            }
+
+            socket.send(JSON.stringify({
+                message: message
+            }));
+
+            messageInput.value = "";
+        });
+
+        messagesElement.scrollTop = messagesElement.scrollHeight;
     </script>
 
 </body>
-
 </html>
