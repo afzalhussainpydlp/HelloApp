@@ -79,6 +79,20 @@
         }
         .sheet .cancel{background:#eef1f3;color:#41525d;}
         .sheet .go{background:#25D366;color:#fff;}
+
+        /* ---- unread messages ka hara badge ---- */
+        .unread-badge{
+            display:inline-block;
+            min-width:20px;
+            padding:2px 7px;
+            margin-top:4px;
+            border-radius:12px;
+            background:#25D366;
+            color:#fff;
+            font-size:12px;
+            font-weight:600;
+            text-align:center;
+        }
     </style>
 
 </head>
@@ -166,9 +180,9 @@
 
                 <div class="time">
 
-                    <div>
-                        {% if user.last_message %}{{ user.last_message.created_at|date:"h:i A" }}{% else %}—{% endif %}
-                    </div>
+                    <div class="t">{% if user.last_message %}{{ user.last_message.created_at|date:"h:i A" }}{% else %}—{% endif %}</div>
+
+                    <div class="badge-wrap">{% if user.unread %}<span class="unread-badge">{{ user.unread }}</span>{% endif %}</div>
 
                 </div>
 
@@ -270,6 +284,100 @@
             document.querySelectorAll(".chat-link").forEach(function (link) {
                 link.style.display = link.textContent.toLowerCase().includes(q) ? "" : "none";
             });
+        });
+
+        // ---------- Live chat list: naya message aate hi list badal jaye ----------
+        const me = Number("{{ request.user.id }}");
+        const chatUrlTemplate = "{% url 'chat_page' 0 %}";
+        const defaultDp = "{% static 'images/profile.jpg.jpg' %}";
+
+        function chatUrl(id) {
+            return chatUrlTemplate.replace("/0/", "/" + id + "/");
+        }
+
+        function formatTime(iso) {
+            return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        }
+
+        // Naye dost ki row JavaScript se banao (jisne pehli baar message bheja)
+        function buildRow(id, name, dp) {
+            const link = document.createElement("a");
+            link.href = chatUrl(id);
+            link.className = "chat-link";
+            link.innerHTML =
+                '<div class="chat" data-user-id="' + id + '">' +
+                    '<div class="profile"><img class="profile-img" alt="Profile"></div>' +
+                    '<div class="message"><h3></h3><p class="preview"></p></div>' +
+                    '<div class="time"><div class="t"></div><div class="badge-wrap"></div></div>' +
+                '</div>';
+            link.querySelector("img").src = dp || defaultDp;
+            link.querySelector("h3").textContent = name;
+            return link;
+        }
+
+        function applyNewMessage(d) {
+            const mine = Number(d.from_id) === me;
+            const otherId = mine ? d.to_id : d.from_id;
+
+            let row = document.querySelector('.chat[data-user-id="' + otherId + '"]');
+            let link;
+
+            if (!row) {
+                // Is dost ki row abhi list mein nahi hai: nayi banao
+                link = buildRow(otherId, mine ? d.to_name : d.from_name, mine ? d.to_dp : d.from_dp);
+                const firstLink = document.querySelector(".chat-link") || document.getElementById("fab");
+                document.body.insertBefore(link, firstLink);
+
+                const empty = document.querySelector(".empty-state");
+                if (empty) empty.remove();
+
+                row = link.querySelector(".chat");
+            } else {
+                // Row pehle se hai: usko sabse upar le aao
+                link = row.parentElement;
+                const firstLink = document.querySelector(".chat-link");
+                if (firstLink && firstLink !== link) {
+                    document.body.insertBefore(link, firstLink);
+                }
+            }
+
+            // Naya preview aur time
+            const preview = row.querySelector(".preview");
+            clearTimeout(preview._timer);
+            delete preview.dataset.original;
+            preview.style.color = "";
+
+            const text = (mine ? "You: " : "") + d.text;
+            preview.textContent = text.length > 35 ? text.slice(0, 34) + "…" : text;
+
+            row.querySelector(".t").textContent = formatTime(d.created_at);
+
+            // Saamne wale ka message hai aur main is chat mein nahi hu: unread +1
+            if (!mine && d.status !== "seen") {
+                const wrap = row.querySelector(".badge-wrap");
+                const old = wrap.querySelector(".unread-badge");
+                const count = (old ? parseInt(old.textContent, 10) : 0) + 1;
+
+                wrap.innerHTML = "";
+                const badge = document.createElement("span");
+                badge.className = "unread-badge";
+                badge.textContent = count;
+                wrap.appendChild(badge);
+            }
+        }
+
+        document.addEventListener("presence", function (e) {
+            const d = e.detail;
+
+            if (d.type === "new_message") {
+                applyNewMessage(d);
+            } else if (d.type === "read") {
+                // Maine kisi ki chat (kisi aur tab mein) khol li: uska badge hata do
+                const row = document.querySelector('.chat[data-user-id="' + d.from_id + '"]');
+                if (row) {
+                    row.querySelector(".badge-wrap").innerHTML = "";
+                }
+            }
         });
 
         // ---------- Kisi ka "typing" aaye toh uske row mein "typing..." dikhao ----------

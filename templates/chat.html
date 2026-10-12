@@ -6,6 +6,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat</title>
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <style>
+        /* ---- message ke ticks: sent / delivered / seen ---- */
+        .tick{
+            margin-left:6px;
+            padding-right:3px;
+            font-size:12px;
+            letter-spacing:-3px;
+            color:#8696a0;
+            white-space:nowrap;
+        }
+        .tick[data-status="sent"]::before{content:"✓";}
+        .tick[data-status="delivered"]::before{content:"✓✓";}
+        .tick[data-status="seen"]{color:#34B7F1;}
+        .tick[data-status="seen"]::before{content:"✓✓";}
+
+        /* ---- layout: naam + DP upar fixed, input neeche fixed, sirf messages scroll ---- */
+        html{height:100%;}
+        body{
+            display:flex !important;
+            flex-direction:column !important;
+            height:100vh !important;
+            height:100dvh !important;
+            margin:0 !important;
+            overflow:hidden !important;
+        }
+        .chat-navbar{
+            position:static !important;
+            flex:0 0 auto !important;
+        }
+        .messages{
+            position:static !important;
+            flex:1 1 auto !important;
+            min-height:0 !important;
+            height:auto !important;
+            max-height:none !important;
+            margin:0 !important;
+            overflow-y:auto !important;
+        }
+        .message-input{
+            position:static !important;
+            flex:0 0 auto !important;
+        }
+    </style>
 </head>
 <body>
 
@@ -35,12 +79,12 @@
     <div id="messages" class="messages">
         {% for message in messages %}
             {% if message.sender_user == request.user %}
-                <div class="sent">
+                <div class="sent" data-id="{{ message.id }}">
                     <div>{{ message.text }}</div>
-                    <small>{{ message.created_at|date:"h:i A" }}</small>
+                    <small>{{ message.created_at|date:"h:i A" }}<span class="tick" data-status="{% if message.seen_at %}seen{% elif message.delivered_at %}delivered{% else %}sent{% endif %}"></span></small>
                 </div>
             {% else %}
-                <div class="received">
+                <div class="received" data-id="{{ message.id }}">
                     <div>{{ message.text }}</div>
                     <small>{{ message.created_at|date:"h:i A" }}</small>
                 </div>
@@ -70,6 +114,21 @@
         const messagesElement = document.getElementById("messages");
         const messageInput = document.getElementById("messageInput");
         const messageForm = document.getElementById("messageForm");
+
+        // =====================================================
+        //  TICKS: sent -> delivered -> seen (sirf upar badhte hain)
+        // =====================================================
+        const TICK_RANK = { sent: 0, delivered: 1, seen: 2 };
+
+        function setTicks(ids, status) {
+            ids.forEach(function (id) {
+                const tick = document.querySelector('.sent[data-id="' + id + '"] .tick');
+
+                if (tick && TICK_RANK[status] > TICK_RANK[tick.dataset.status]) {
+                    tick.dataset.status = status;
+                }
+            });
+        }
 
         // =====================================================
         //  ONLINE / LAST SEEN / TYPING (presence socket se)
@@ -140,6 +199,9 @@
                     isTyping = false;
                     renderStatus();
                 }, 2500);
+            } else if (d.type === "ticks") {
+                // Mere bheje messages ke ticks badle (delivered ya seen)
+                setTicks(d.ids, d.status);
             }
 
             renderStatus();
@@ -181,28 +243,34 @@
                 return;
             }
 
+            const mine = Number(data.sender_id) === currentUserId;
+
             // Saamne wale ka message aaya, matlab usne type karna band kar diya
-            if (Number(data.sender_id) !== currentUserId) {
+            if (!mine) {
                 isTyping = false;
                 renderStatus();
             }
 
             const newMessage = document.createElement("div");
-
-            if (Number(data.sender_id) === currentUserId) {
-                newMessage.className = "sent";
-            } else {
-                newMessage.className = "received";
-            }
+            newMessage.className = mine ? "sent" : "received";
+            newMessage.dataset.id = data.id;
 
             const messageText = document.createElement("div");
             messageText.textContent = data.message;
 
             const time = document.createElement("small");
-            time.textContent = new Date().toLocaleTimeString([], {
+            time.textContent = new Date(data.created_at).toLocaleTimeString([], {
                 hour: "2-digit",
                 minute: "2-digit"
             });
+
+            // Apne bheje message par tick lagao
+            if (mine) {
+                const tick = document.createElement("span");
+                tick.className = "tick";
+                tick.dataset.status = data.status || "sent";
+                time.appendChild(tick);
+            }
 
             newMessage.appendChild(messageText);
             newMessage.appendChild(time);

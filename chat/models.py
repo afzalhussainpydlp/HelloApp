@@ -21,6 +21,9 @@ class Message(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
 
+    delivered_at = models.DateTimeField(null=True, blank=True)
+    seen_at = models.DateTimeField(null=True, blank=True)
+
 
 # Indentation sahi kar diya - ab ye bilkul alag class hai
 class UserStatus(models.Model):

@@ -10,7 +10,7 @@ from django.contrib.auth.models import User
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.crypto import salted_hmac, constant_time_compare
-
+from django.db.models import Q, Count
 from .models import Message, UserStatus, Profile, PhoneOTP
 
 
@@ -36,8 +36,16 @@ def home(request):
 
     users = list(User.objects.filter(id__in=chatted_ids))
 
+    # Kis dost ke kitne messages maine abhi tak nahi dekhe
+    unread_map = dict(
+        Message.objects.filter(receiver_user=request.user, seen_at__isnull=True)
+        .values_list("sender_user")
+        .annotate(c=Count("id"))
+    )
+
     # Har user ke saath mera last message
     for u in users:
+        u.unread = unread_map.get(u.id, 0)
         u.last_message = Message.objects.filter(
             Q(sender_user=request.user, receiver_user=u) |
             Q(sender_user=u, receiver_user=request.user)
