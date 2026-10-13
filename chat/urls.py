@@ -8,8 +8,8 @@ urlpatterns = [
     path("new-chat/", views.new_chat, name="new_chat"),
 
     path("welcome/", views.welcome_view, name="welcome"),
-    path("login/", views.phone_view, name="login"),
-    path("register/", views.phone_view, name="register_phone"),
+    path("login/", views.phone_view, {"mode": "login"}, name="login"),
+    path("register/", views.phone_view, {"mode": "register"}, name="register_phone"),
     path("verify/", views.otp_view, name="register_otp"),
     path("profile/", views.profile_view, name="register_profile"),
     path("logout/", views.logout_view, name="logout"),

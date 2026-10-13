@@ -56,6 +56,10 @@ a{color:inherit}
 .note{text-align:center;font-size:12.5px;color:#948aa3;margin-bottom:24px}
 .hint a{color:var(--coral);font-weight:600;text-decoration:none}
 
+.or{display:flex;align-items:center;gap:12px;color:#948aa3;font-size:13px;margin:22px 0}
+.or::before,.or::after{content:"";flex:1;height:1px;background:#e4dfeb}
+.ghost{display:block;text-align:center;text-decoration:none;padding:14px;border:2px solid var(--coral);border-radius:10px;color:var(--coral);font-family:var(--head);font-weight:600;font-size:15px;transition:background .2s,color .2s}
+.ghost:hover{background:var(--coral);color:#fff}
 </style>
 </head>
 <body>
@@ -71,16 +75,18 @@ a{color:inherit}
   <div class="form-inner">
     <div class="big">💬</div>
     <h2>Verify +91 {{ masked_phone }}</h2>
-    <p class="sub">We sent a 6-digit code to your number. <a href="{% url 'register_phone' %}" style="color:#ff6a5c;font-weight:600;text-decoration:none">Wrong number?</a></p>
+    <p class="sub">We sent a 6-digit code to your number. <a href="{% url back_url %}" style="color:#ff6a5c;font-weight:600;text-decoration:none">Wrong number?</a></p>
     {% if error %}<div class="err">{{ error }}</div>{% endif %}
     <form method="POST">
       {% csrf_token %}
       <div class="field otp"><input type="text" id="otp" name="otp" placeholder=" " maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" required autofocus><label for="otp">6-digit code</label></div>
       <button class="submit" type="submit">Verify</button>
     </form>
-    <div class="line">Did not get the code? <a href="{% url 'register_phone' %}">Resend code</a></div>
+    <div class="line">Did not get the code? <a href="{% url back_url %}">Resend code</a></div>
   </div>
 </div>
-<script>function togglePw(id,b){var p=document.getElementById(id);if(p.type==="password"){p.type="text";b.textContent="Hide"}else{p.type="password";b.textContent="Show"}}</script>
+<script>
+function togglePw(id,b){var p=document.getElementById(id);if(p.type==="password"){p.type="text";b.textContent="Hide"}else{p.type="password";b.textContent="Show"}}
+</script>
 </body>
 </html>

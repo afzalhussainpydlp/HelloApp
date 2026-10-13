@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Your phone number — HelloApp</title>
+<title>{% if mode == "login" %}Log in{% else %}Create account{% endif %} — HelloApp</title>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -56,13 +56,17 @@ a{color:inherit}
 .note{text-align:center;font-size:12.5px;color:#948aa3;margin-bottom:24px}
 .hint a{color:var(--coral);font-weight:600;text-decoration:none}
 
+.or{display:flex;align-items:center;gap:12px;color:#948aa3;font-size:13px;margin:22px 0}
+.or::before,.or::after{content:"";flex:1;height:1px;background:#e4dfeb}
+.ghost{display:block;text-align:center;text-decoration:none;padding:14px;border:2px solid var(--coral);border-radius:10px;color:var(--coral);font-family:var(--head);font-weight:600;font-size:15px;transition:background .2s,color .2s}
+.ghost:hover{background:var(--coral);color:#fff}
 </style>
 </head>
 <body>
 <div class="brand-side">
   <div class="wordmark"><span class="mark"></span>HelloApp</div>
   <div>
-    <div class="pitch"><h1>Your number is all you need.</h1></div>
+    <div class="pitch"><h1>{% if mode == "login" %}Welcome back. Your chats are waiting.{% else %}Your number is all you need.{% endif %}</h1></div>
     <div class="thread"><div class="bubble them">number kya hai tera?</div><div class="bubble me">10 digit wala daal raha hu</div><div class="bubble them">OTP aayega usi par</div><div class="bubble me">theek hai 👍</div><div class="typing"><span></span><span></span><span></span></div></div>
   </div>
   <div class="brand-foot">Say hello. The world is listening.</div>
@@ -70,16 +74,24 @@ a{color:inherit}
 <div class="form-side">
   <div class="form-inner">
     <div class="big">📱</div>
-    <h2>Enter your phone number</h2>
-    <p class="sub">HelloApp will send a one-time code to verify your number.</p>
+    <h2>{% if mode == "login" %}Log in to HelloApp{% else %}Create your account{% endif %}</h2>
+    <p class="sub">{% if mode == "login" %}Enter your phone number to log in. We will send you a one-time code.{% else %}Enter your phone number. We will send you a one-time code to verify it.{% endif %}</p>
     {% if error %}<div class="err">{{ error }}</div>{% endif %}
     <form method="POST">
       {% csrf_token %}
       <div class="field ph"><span class="cc">+91</span><input type="tel" id="phone" name="phone" placeholder=" " maxlength="10" pattern="[0-9]{10}" inputmode="numeric" required autofocus><label for="phone">Mobile number</label></div>
       <button class="submit" type="submit">Next</button>
     </form>
+    {% if mode == "login" %}
+    <div class="or">or</div>
+    <a class="ghost" href="{% url 'register_phone' %}">Create new account</a>
+    {% else %}
+    <div class="line">Already have an account? <a href="{% url 'login' %}">Log in</a></div>
+    {% endif %}
   </div>
 </div>
-<script>function togglePw(id,b){var p=document.getElementById(id);if(p.type==="password"){p.type="text";b.textContent="Hide"}else{p.type="password";b.textContent="Show"}}</script>
+<script>
+function togglePw(id,b){var p=document.getElementById(id);if(p.type==="password"){p.type="text";b.textContent="Hide"}else{p.type="password";b.textContent="Show"}}
+</script>
 </body>
 </html>

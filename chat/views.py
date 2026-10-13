@@ -186,7 +186,7 @@ def welcome_view(request):
     return render(request, "welcome.html")
 
 
-def phone_view(request):
+def phone_view(request, mode="register"):
 
     if request.user.is_authenticated:
         return redirect("home")
@@ -195,9 +195,14 @@ def phone_view(request):
 
     if request.method == "POST":
         phone = request.POST.get("phone", "").strip()
+        registered = Profile.objects.filter(phone=phone).exists()
 
         if not re.fullmatch(r"[6-9]\d{9}", phone):
             error = "Enter a valid 10-digit mobile number."
+        elif mode == "login" and not registered:
+            error = "This number is not registered yet. Please create a new account."
+        elif mode == "register" and registered:
+            error = "This number is already registered. Please log in."
         elif PhoneOTP.objects.filter(
             phone=phone,
             created_at__gte=timezone.now() - timedelta(seconds=30)
@@ -210,9 +215,10 @@ def phone_view(request):
             PhoneOTP.objects.create(phone=phone, code_hash=make_hash(phone, code))
             send_otp(phone, code)
             request.session["otp_phone"] = phone
+            request.session["otp_mode"] = mode
             return redirect("register_otp")
 
-    return render(request, "register_phone.html", {"error": error})
+    return render(request, "register_phone.html", {"error": error, "mode": mode})
 
 
 def otp_view(request):
@@ -223,6 +229,10 @@ def otp_view(request):
 
     masked = phone[:2] + "••••••" + phone[-2:]
     error = None
+
+    # "Wrong number?" aur "Resend" kis page par wapas jayein
+    mode = request.session.get("otp_mode", "register")
+    back_url = "login" if mode == "login" else "register_phone"
 
     if request.method == "POST":
         code = request.POST.get("otp", "").strip()
@@ -251,9 +261,11 @@ def otp_view(request):
             request.session["verified_phone"] = phone
             return redirect("register_profile")
 
-    return render(request, "register_otp.html", {"error": error, "masked_phone": masked})
-
-
+    return render(request, "register_otp.html", {
+        "error": error,
+        "masked_phone": masked,
+        "back_url": back_url,
+    })
 def profile_view(request):
 
     phone = request.session.get("verified_phone")
