@@ -171,7 +171,7 @@
                         {% firstof user.profile.full_name user.username %}
                     </h3>
 
-                    <p class="preview">{% if user.last_message %}{% if user.last_message.sender_user_id == request.user.id %}You: {% endif %}{{ user.last_message.text|truncatechars:35 }}{% else %}Start a conversation{% endif %}</p>
+                    <p class="preview">{% if user.last_message %}{% if user.last_message.sender_user_id == request.user.id %}You: {% endif %}{% if user.last_message.text %}{{ user.last_message.text|truncatechars:35 }}{% else %}📷 Photo{% endif %}{% else %}Start a conversation{% endif %}</p>
 
                 </div>
 

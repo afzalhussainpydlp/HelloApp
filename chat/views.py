@@ -12,11 +12,16 @@ from django.utils import timezone
 from django.utils.crypto import salted_hmac, constant_time_compare
 from django.db.models import Q, Count
 from .models import Message, UserStatus, Profile, PhoneOTP
+from PIL import Image
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+
+from .consumers import message_status, build_events, room_name
 
 
-# =====================================================
+
 #  HOME: sirf unki list jinse baat hui hai
-# =====================================================
+
 
 def home(request):
 
@@ -57,9 +62,9 @@ def home(request):
     return render(request, "index.html", {"users": users})
 
 
-# =====================================================
+
 #  NEW CHAT: phone number se chat shuru karna
-# =====================================================
+
 
 def new_chat(request):
 
@@ -85,9 +90,9 @@ def new_chat(request):
     return redirect("chat_page", user_id=profile.user_id)
 
 
-# =====================================================
+
 #  CHAT PAGE
-# =====================================================
+
 
 def chat_page(request, user_id):
 
@@ -156,6 +161,75 @@ def send_message(request):
     return JsonResponse({
         "status": "error"
     })
+    
+MAX_IMAGE_MB = 5
+ALLOWED_FORMATS = {"JPEG", "PNG", "WEBP", "GIF"}
+
+
+def upload_image(request):
+
+    if not request.user.is_authenticated:
+        return JsonResponse({"ok": False, "error": "Login required"}, status=401)
+
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "POST only"}, status=405)
+
+    # 1) Kisko bhej rahe hain
+    try:
+        receiver_id = int(request.POST.get("receiver_id", ""))
+    except ValueError:
+        return JsonResponse({"ok": False, "error": "Invalid receiver"}, status=400)
+
+    receiver = User.objects.filter(id=receiver_id).first()
+    if not receiver or receiver.id == request.user.id:
+        return JsonResponse({"ok": False, "error": "Invalid receiver"}, status=400)
+
+    # 2) File check: hai, size theek, sach mein photo
+    file = request.FILES.get("image")
+    if not file:
+        return JsonResponse({"ok": False, "error": "No photo selected"}, status=400)
+
+    if file.size > MAX_IMAGE_MB * 1024 * 1024:
+        return JsonResponse({"ok": False, "error": f"Photo must be under {MAX_IMAGE_MB} MB"}, status=400)
+
+    try:
+        img = Image.open(file)
+        image_format = img.format
+        img.verify()                      # file andar se sach mein image hai ya nahi
+    except Exception:
+        return JsonResponse({"ok": False, "error": "This is not a valid image"}, status=400)
+
+    if image_format not in ALLOWED_FORMATS:
+        return JsonResponse({"ok": False, "error": "Only JPG, PNG, WEBP or GIF allowed"}, status=400)
+
+    file.seek(0)                          # verify ke baad file ko shuru par laao
+
+    # 3) Message save karo (sent / delivered / seen ka status tay karke)
+    status = message_status(request.user.id, receiver.id)
+    now = timezone.now()
+    extra = {}
+    if status in ("delivered", "seen"):
+        extra["delivered_at"] = now
+    if status == "seen":
+        extra["seen_at"] = now
+
+    msg = Message.objects.create(
+        sender=request.user.username,
+        sender_user=request.user,
+        receiver_user=receiver,
+        text=request.POST.get("caption", "").strip()[:1000],
+        image=file,
+        **extra
+    )
+
+    # 4) WebSocket se dono ko live khabar bhejo (text message jaisa hi)
+    room_event, list_event = build_events(msg, status)
+    send = async_to_sync(get_channel_layer().group_send)
+    send(room_name(request.user.id, receiver.id), room_event)
+    send(f"presence_user_{receiver.id}", list_event)
+    send(f"presence_user_{request.user.id}", list_event)
+
+    return JsonResponse({"ok": True, "id": msg.id})
 
 
 def logout_view(request):
@@ -165,9 +239,9 @@ def logout_view(request):
     return redirect("login")
 
 
-# =====================================================
+
 #  WHATSAPP JAISA LOGIN / REGISTER (phone + OTP)
-# =====================================================
+
 
 def make_hash(phone, code):
     # OTP ko scramble karta hai, asli OTP kahin save nahi hota
@@ -176,7 +250,7 @@ def make_hash(phone, code):
 
 def send_otp(phone, code):
     # DEVELOPMENT: OTP terminal mein print hota hai.
-    # Baad mein asli SMS bhejna ho toh bas yahin SMS provider ka code lagega.
+    # Baad mein asli SMS bhejna ho toh bas yahin SMS provider ka code lagana prega .
     print(f"\n========== OTP for +91 {phone} : {code} ==========\n")
 
 

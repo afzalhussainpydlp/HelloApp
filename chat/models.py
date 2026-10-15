@@ -1,9 +1,18 @@
+import os
+import uuid
 from django.db import models
 from django.contrib.auth.models import User
 
 
+def chat_image_path(instance, filename):
+    # Asli naam ki jagah random naam (guess nahi ho sakta)
+    ext = os.path.splitext(filename)[1].lower()
+    return f"chat_images/{uuid.uuid4().hex}{ext}"
+
+
 class Message(models.Model):
     sender = models.CharField(max_length=100)
+    image = models.ImageField(upload_to=chat_image_path, null=True, blank=True)
 
     sender_user = models.ForeignKey(
         User, on_delete=models.CASCADE, null=True, blank=True
@@ -25,7 +34,7 @@ class Message(models.Model):
     seen_at = models.DateTimeField(null=True, blank=True)
 
 
-# Indentation sahi kar diya - ab ye bilkul alag class hai
+
 class UserStatus(models.Model):
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, related_name="status"

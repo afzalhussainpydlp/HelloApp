@@ -24,6 +24,56 @@ def user_card(user):
     return name, dp
 
 
+def room_name(user_a, user_b):
+    """Do users ki chat ka common group naam (chhota id pehle)."""
+    low, high = sorted([user_a, user_b])
+    return f"chat_{low}_{high}"
+
+
+def message_status(sender_id, receiver_id):
+    """Message ka status saamne wale ki halat dekh ke tay karo."""
+    if IN_CHAT.get((receiver_id, sender_id), 0) > 0:
+        return "seen"          # wo isi chat mein baitha hai
+    if ONLINE.get(receiver_id, 0) > 0:
+        return "delivered"     # online hai par chat khuli nahi
+    return "sent"              # offline hai
+
+
+def build_events(msg, status):
+    """Ek saved message se do events banao:
+    1) room_event: chat ke andar dikhane ke liye
+    2) list_event: dono users ki chat list (home) update karne ke liye
+    """
+    from_name, from_dp = user_card(msg.sender_user)
+    to_name, to_dp = user_card(msg.receiver_user)
+    image = msg.image.url if msg.image else ""
+    created = msg.created_at.isoformat()
+
+    room_event = {
+        "type": "chat_message",
+        "id": msg.id,
+        "message": msg.text,
+        "image": image,
+        "sender_id": msg.sender_user_id,
+        "created_at": created,
+        "status": status,
+    }
+    list_event = {
+        "type": "new_message_event",
+        "id": msg.id,
+        "text": msg.text or "\U0001F4F7 Photo",     # sirf photo ho toh preview "Photo"
+        "from_id": msg.sender_user_id,
+        "to_id": msg.receiver_user_id,
+        "created_at": created,
+        "status": status,
+        "from_name": from_name,
+        "from_dp": from_dp,
+        "to_name": to_name,
+        "to_dp": to_dp,
+    }
+    return room_event, list_event
+
+
 @database_sync_to_async
 def mark_seen(me_id, other_id):
     """other ke bheje saare unseen messages ko 'seen' karo. Unki IDs wapas do."""
@@ -89,8 +139,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.current_user_id = user.id
 
         # Dono users ke liye ek common chat group
-        user_ids = sorted([self.current_user_id, self.user_id])
-        self.room_group_name = f"chat_{user_ids[0]}_{user_ids[1]}"
+        self.room_group_name = room_name(self.current_user_id, self.user_id)
 
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
@@ -136,44 +185,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return
 
         # Message ka status: saamne wale ki halat dekh ke
-        if IN_CHAT.get((self.user_id, self.current_user_id), 0) > 0:
-            status = "seen"          # wo isi chat mein baitha hai
-        elif ONLINE.get(self.user_id, 0) > 0:
-            status = "delivered"     # online hai par chat khuli nahi
-        else:
-            status = "sent"          # offline hai
+        status = message_status(self.current_user_id, self.user_id)
 
-        info = await self.save_message(message, status)
+        room_event, list_event = await self.save_message(message, status)
 
         # Chat ke dono participants ko message bhejna
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                "type": "chat_message",
-                "id": info["id"],
-                "message": message,
-                "sender_id": self.current_user_id,
-                "created_at": info["created_at"],
-                "status": status,
-            }
-        )
+        await self.channel_layer.group_send(self.room_group_name, room_event)
 
         # Dono ki chat list ko live update (naya preview, unread count)
-        event = {
-            "type": "new_message_event",
-            "id": info["id"],
-            "text": message,
-            "from_id": self.current_user_id,
-            "to_id": self.user_id,
-            "created_at": info["created_at"],
-            "status": status,
-            "from_name": info["from_name"],
-            "from_dp": info["from_dp"],
-            "to_name": info["to_name"],
-            "to_dp": info["to_dp"],
-        }
-        await self.channel_layer.group_send(f"presence_user_{self.user_id}", event)
-        await self.channel_layer.group_send(f"presence_user_{self.current_user_id}", event)
+        await self.channel_layer.group_send(f"presence_user_{self.user_id}", list_event)
+        await self.channel_layer.group_send(f"presence_user_{self.current_user_id}", list_event)
 
     @database_sync_to_async
     def save_message(self, text, status):
@@ -194,18 +215,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             text=text,
             **extra
         )
-
-        from_name, from_dp = user_card(sender)
-        to_name, to_dp = user_card(receiver)
-
-        return {
-            "id": msg.id,
-            "created_at": msg.created_at.isoformat(),
-            "from_name": from_name,
-            "from_dp": from_dp,
-            "to_name": to_name,
-            "to_dp": to_dp,
-        }
+        return build_events(msg, status)
 
     async def chat_message(self, event):
         await self.send(
@@ -213,6 +223,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 "type": "chat_message",
                 "id": event["id"],
                 "message": event["message"],
+                "image": event.get("image", ""),
                 "sender_id": event["sender_id"],
                 "created_at": event["created_at"],
                 "status": event["status"],

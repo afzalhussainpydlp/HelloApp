@@ -49,6 +49,46 @@
             position:static !important;
             flex:0 0 auto !important;
         }
+
+        /* ---- photo wale messages ---- */
+        .chat-img{
+            display:block;
+            max-width:240px;
+            max-height:300px;
+            border-radius:8px;
+            margin-bottom:4px;
+            object-fit:cover;
+            cursor:pointer;
+        }
+
+        /* ---- photo chunne ke baad preview ---- */
+        #attachPreview{
+            display:none;
+            flex:0 0 auto;
+            align-items:center;
+            gap:10px;
+            padding:8px 12px;
+            background:#f0f2f5;
+            border-top:1px solid #d1d7db;
+        }
+        #attachPreview img{width:54px;height:54px;object-fit:cover;border-radius:8px;}
+        #attachPreview span{flex:1;font-size:13px;color:#41525d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+        #previewCancel{border:none;background:none;font-size:20px;cursor:pointer;color:#667781;}
+        .attach-btn{border:none;background:none;font-size:22px;cursor:pointer;padding:0 8px;}
+
+        /* ---- badi photo dekhna (click karne par) ---- */
+        #lightbox{
+            display:none;
+            position:fixed;
+            inset:0;
+            background:rgba(0,0,0,.88);
+            z-index:50;
+            align-items:center;
+            justify-content:center;
+            cursor:zoom-out;
+        }
+        #lightbox.show{display:flex;}
+        #lightbox img{max-width:94vw;max-height:92vh;border-radius:6px;}
     </style>
 </head>
 <body>
@@ -80,21 +120,32 @@
         {% for message in messages %}
             {% if message.sender_user == request.user %}
                 <div class="sent" data-id="{{ message.id }}">
-                    <div>{{ message.text }}</div>
+                    {% if message.image %}<img class="chat-img" src="{{ message.image.url }}" alt="Photo">{% endif %}
+                    {% if message.text %}<div>{{ message.text }}</div>{% endif %}
                     <small>{{ message.created_at|date:"h:i A" }}<span class="tick" data-status="{% if message.seen_at %}seen{% elif message.delivered_at %}delivered{% else %}sent{% endif %}"></span></small>
                 </div>
             {% else %}
                 <div class="received" data-id="{{ message.id }}">
-                    <div>{{ message.text }}</div>
+                    {% if message.image %}<img class="chat-img" src="{{ message.image.url }}" alt="Photo">{% endif %}
+                    {% if message.text %}<div>{{ message.text }}</div>{% endif %}
                     <small>{{ message.created_at|date:"h:i A" }}</small>
                 </div>
             {% endif %}
         {% endfor %}
     </div>
 
+    <!-- Chuni hui photo ka preview (bhejne se pehle) -->
+    <div id="attachPreview">
+        <img id="previewImg" alt="Preview">
+        <span id="previewName"></span>
+        <button type="button" id="previewCancel" aria-label="Remove photo">✕</button>
+    </div>
+
     <!-- Message Input -->
     <form id="messageForm" class="message-input">
         {% csrf_token %}
+        <button type="button" class="attach-btn" id="attachBtn" aria-label="Attach photo">📎</button>
+        <input type="file" id="fileInput" accept="image/*" hidden>
         <input
             type="text"
             id="messageInput"
@@ -103,6 +154,9 @@
         >
         <button type="submit">➤</button>
     </form>
+
+    <!-- Badi photo -->
+    <div id="lightbox"><img id="lightboxImg" alt="Photo"></div>
 
     {% include "presence_socket.html" %}
 
@@ -114,6 +168,119 @@
         const messagesElement = document.getElementById("messages");
         const messageInput = document.getElementById("messageInput");
         const messageForm = document.getElementById("messageForm");
+
+        // =====================================================
+        //  PHOTO BHEJNA: chuno -> preview -> bhejo (HTTP se upload)
+        // =====================================================
+        const MAX_IMAGE_MB = 5;
+        const uploadUrl = "{% url 'upload_image' %}";
+
+        const attachBtn = document.getElementById("attachBtn");
+        const fileInput = document.getElementById("fileInput");
+        const attachPreview = document.getElementById("attachPreview");
+        const previewImg = document.getElementById("previewImg");
+        const previewName = document.getElementById("previewName");
+        const lightbox = document.getElementById("lightbox");
+        const lightboxImg = document.getElementById("lightboxImg");
+
+        let selectedFile = null;
+
+        attachBtn.addEventListener("click", function () {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener("change", function () {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            if (!file.type.startsWith("image/")) {
+                alert("Sirf photo chuno.");
+                fileInput.value = "";
+                return;
+            }
+            if (file.size > MAX_IMAGE_MB * 1024 * 1024) {
+                alert("Photo " + MAX_IMAGE_MB + " MB se chhoti honi chahiye.");
+                fileInput.value = "";
+                return;
+            }
+
+            selectedFile = file;
+            previewName.textContent = file.name;
+
+            // Chuni hui photo ko bhejne se pehle dikhana
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                previewImg.src = e.target.result;
+                attachPreview.style.display = "flex";
+            };
+            reader.readAsDataURL(file);
+
+            messageInput.placeholder = "Add a caption...";
+            messageInput.focus();
+        });
+
+        function clearAttachment() {
+            selectedFile = null;
+            fileInput.value = "";
+            previewImg.removeAttribute("src");
+            attachPreview.style.display = "none";
+            messageInput.placeholder = "Type a message...";
+        }
+
+        document.getElementById("previewCancel").addEventListener("click", clearAttachment);
+
+        async function sendImage(caption) {
+            const data = new FormData();
+            data.append("image", selectedFile);
+            data.append("receiver_id", receiverId);
+            data.append("caption", caption);
+
+            const token = messageForm.querySelector("[name=csrfmiddlewaretoken]").value;
+            const sendButton = messageForm.querySelector('button[type="submit"]');
+            sendButton.disabled = true;
+
+            try {
+                const response = await fetch(uploadUrl, {
+                    method: "POST",
+                    body: data,
+                    headers: { "X-CSRFToken": token },
+                    credentials: "same-origin"
+                });
+                const result = await response.json().catch(function () { return {}; });
+
+                if (!response.ok || !result.ok) {
+                    alert(result.error || "Photo nahi gayi, dobara try karo.");
+                } else {
+                    // Photo WebSocket se sabke paas apne aap aa jayegi
+                    clearAttachment();
+                    messageInput.value = "";
+                }
+            } catch (error) {
+                alert("Network error, dobara try karo.");
+            } finally {
+                sendButton.disabled = false;
+            }
+        }
+
+        // Photo par click: badi dikhao. Bahar click ya Esc: band.
+        messagesElement.addEventListener("click", function (e) {
+            if (e.target.classList.contains("chat-img")) {
+                lightboxImg.src = e.target.src;
+                lightbox.classList.add("show");
+            }
+        });
+        lightbox.addEventListener("click", function () {
+            lightbox.classList.remove("show");
+        });
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "Escape") lightbox.classList.remove("show");
+        });
+
+        function scrollToBottom() {
+            messagesElement.scrollTop = messagesElement.scrollHeight;
+        }
+        // Photos load hone ke baad bhi sabse neeche rahe
+        window.addEventListener("load", scrollToBottom);
 
         // =====================================================
         //  TICKS: sent -> delivered -> seen (sirf upar badhte hain)
@@ -255,6 +422,16 @@
             newMessage.className = mine ? "sent" : "received";
             newMessage.dataset.id = data.id;
 
+            // Photo ho toh pehle photo
+            if (data.image) {
+                const photo = document.createElement("img");
+                photo.className = "chat-img";
+                photo.alt = "Photo";
+                photo.src = data.image;
+                photo.addEventListener("load", scrollToBottom);
+                newMessage.appendChild(photo);
+            }
+
             const messageText = document.createElement("div");
             messageText.textContent = data.message;
 
@@ -272,7 +449,9 @@
                 time.appendChild(tick);
             }
 
-            newMessage.appendChild(messageText);
+            if (data.message) {
+                newMessage.appendChild(messageText);   // sirf photo ho toh text ka dabba nahi
+            }
             newMessage.appendChild(time);
             messagesElement.appendChild(newMessage);
 
@@ -292,6 +471,12 @@
             event.preventDefault();
 
             const message = messageInput.value.trim();
+
+            // Photo chuni hui hai: photo bhejo (message uska caption banega)
+            if (selectedFile) {
+                sendImage(message);
+                return;
+            }
 
             if (message === "") {
                 return;

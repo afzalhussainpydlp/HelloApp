@@ -13,4 +13,5 @@ urlpatterns = [
     path("verify/", views.otp_view, name="register_otp"),
     path("profile/", views.profile_view, name="register_profile"),
     path("logout/", views.logout_view, name="logout"),
+        path("upload-image/", views.upload_image, name="upload_image"),
 ]
