@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit profile - HelloApp</title>
+
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0;}
+        body{
+            font-family:"Segoe UI",Roboto,Arial,sans-serif;
+            background:#f0f2f5;
+            min-height:100vh;
+        }
+        .top{
+            background:#25D366;
+            color:#fff;
+            padding:16px 20px;
+            display:flex;
+            align-items:center;
+            gap:16px;
+            font-size:20px;
+            font-weight:600;
+        }
+        .top a{color:#fff;text-decoration:none;font-size:24px;}
+
+        .card{
+            max-width:440px;
+            margin:24px auto;
+            background:#fff;
+            border-radius:14px;
+            padding:28px 24px;
+            box-shadow:0 2px 12px rgba(0,0,0,.08);
+        }
+
+        .avatar-wrap{text-align:center;margin-bottom:20px;}
+        .avatar{
+            width:130px;height:130px;
+            border-radius:50%;
+            background:#e4e8ec center/cover no-repeat;
+            margin:0 auto 10px;
+            display:flex;align-items:center;justify-content:center;
+            font-size:50px;
+            cursor:pointer;
+            border:3px solid #fff;
+            box-shadow:0 2px 10px rgba(0,0,0,.18);
+        }
+        .avatar:hover{box-shadow:0 2px 14px rgba(37,211,102,.55);}
+        .change{color:#128C7E;font-size:14px;font-weight:600;cursor:pointer;background:none;border:none;}
+        .remove{display:block;margin-top:8px;font-size:13px;color:#b3261e;}
+        .remove input{margin-right:6px;}
+
+        label.l{display:block;font-size:13px;font-weight:600;color:#667781;margin:16px 0 6px;}
+        input[type=text], textarea{
+            width:100%;
+            font:inherit;
+            font-size:16px;
+            padding:11px 12px;
+            border:none;
+            border-bottom:2px solid #d1d7db;
+            background:#fafafa;
+            outline:none;
+            border-radius:6px 6px 0 0;
+        }
+        input[type=text]:focus, textarea:focus{border-bottom-color:#25D366;background:#fff;}
+        textarea{resize:none;height:76px;}
+        .count{text-align:right;font-size:12px;color:#8696a0;margin-top:3px;}
+        .phone{
+            padding:11px 12px;
+            background:#f3f4f6;
+            border-radius:6px;
+            color:#41525d;
+            font-size:16px;
+        }
+        .hint{font-size:12px;color:#8696a0;margin-top:4px;}
+
+        .btn{
+            display:block;width:100%;
+            margin-top:26px;
+            padding:13px;
+            border:none;border-radius:28px;
+            background:#25D366;color:#fff;
+            font-size:16px;font-weight:600;cursor:pointer;
+        }
+        .btn:hover{background:#1ebe5a;}
+
+        .msg{padding:11px 14px;border-radius:10px;font-size:14px;margin-bottom:16px;}
+        .err{background:#fdecea;color:#b3261e;}
+        .ok{background:#e7f8ee;color:#0f7a3b;}
+        .who{font-size:12px;color:#8696a0;text-align:center;margin-bottom:14px;}
+    </style>
+</head>
+<body>
+
+    <div class="top">
+        <a href="{% url 'home' %}" aria-label="Back">←</a>
+        Profile
+    </div>
+
+    <div class="card">
+
+        <p class="who">Logged in as: {{ request.user.username }}</p>
+
+        {% if creating %}
+            <p class="msg err">Your account has no profile yet. Add your phone number and name to create it.</p>
+        {% endif %}
+
+            {% if saved %}<p class="msg ok">Profile updated.</p>{% endif %}
+            {% if error %}<p class="msg err">{{ error }}</p>{% endif %}
+
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <div class="avatar-wrap">
+                    <div class="avatar" id="avatar"
+                         {% if profile.dp %}style="background-image:url('{{ profile.dp.url }}')"{% endif %}
+                         data-original="{% if profile.dp %}{{ profile.dp.url }}{% endif %}">{% if not profile.dp %}👤{% endif %}</div>
+
+                    <button type="button" class="change" id="changeBtn">Change photo</button>
+                    <input type="file" name="dp" id="dp" accept="image/*" hidden>
+
+                    {% if profile.dp %}
+                        <label class="remove"><input type="checkbox" name="remove_dp" id="removeDp">Remove photo</label>
+                    {% endif %}
+                </div>
+
+                <label class="l" for="full_name">Name</label>
+                <input type="text" id="full_name" name="full_name" value="{{ name_value }}" maxlength="25" required>
+                <div class="count"><span id="nameCount">0</span>/25</div>
+
+                <label class="l" for="about">About</label>
+                <textarea id="about" name="about" maxlength="140">{{ about_value }}</textarea>
+                <div class="count"><span id="aboutCount">0</span>/140</div>
+
+                {% if creating %}
+                    <label class="l" for="phone">Phone</label>
+                    <input type="text" id="phone" name="phone" value="{{ phone_value }}" maxlength="10" inputmode="numeric" placeholder="10-digit mobile number" required>
+                    <p class="hint">Friends find you with this number.</p>
+                {% else %}
+                    <label class="l">Phone</label>
+                    <div class="phone">+91 {{ profile.phone }}</div>
+                    <p class="hint">Phone number cannot be changed.</p>
+                {% endif %}
+
+                <button type="submit" class="btn">Save</button>
+            </form>
+
+    </div>
+
+    <script>
+        const avatar = document.getElementById("avatar");
+        const dpInput = document.getElementById("dp");
+        const removeDp = document.getElementById("removeDp");
+        const nameInput = document.getElementById("full_name");
+        const aboutInput = document.getElementById("about");
+
+        if (avatar) {
+            const MAX_MB = 2;
+
+            function showPhoto(url) {
+                avatar.style.backgroundImage = url ? "url('" + url + "')" : "";
+                avatar.textContent = url ? "" : "\uD83D\uDC64";
+            }
+
+            // Photo par ya "Change photo" par click: file chuno
+            avatar.addEventListener("click", function () { dpInput.click(); });
+            document.getElementById("changeBtn").addEventListener("click", function () { dpInput.click(); });
+
+            dpInput.addEventListener("change", function () {
+                const file = dpInput.files[0];
+                if (!file) return;
+
+                if (!file.type.startsWith("image/")) {
+                    alert("Please choose a photo.");
+                    dpInput.value = "";
+                    return;
+                }
+                if (file.size > MAX_MB * 1024 * 1024) {
+                    alert("Photo must be under " + MAX_MB + " MB.");
+                    dpInput.value = "";
+                    return;
+                }
+
+                // Naya chuni hui photo turant dikhao
+                const reader = new FileReader();
+                reader.onload = function (e) { showPhoto(e.target.result); };
+                reader.readAsDataURL(file);
+                if (removeDp) removeDp.checked = false;
+            });
+
+            // "Remove photo" tick karne par turant khaali dikhao
+            if (removeDp) {
+                removeDp.addEventListener("change", function () {
+                    if (removeDp.checked) {
+                        dpInput.value = "";
+                        showPhoto("");
+                    } else {
+                        showPhoto(avatar.dataset.original);
+                    }
+                });
+            }
+
+            // Akshar ginti (kitne baaki)
+            function count(input, out) {
+                document.getElementById(out).textContent = input.value.length;
+            }
+            nameInput.addEventListener("input", function () { count(nameInput, "nameCount"); });
+            aboutInput.addEventListener("input", function () { count(aboutInput, "aboutCount"); });
+            count(nameInput, "nameCount");
+            count(aboutInput, "aboutCount");
+        }
+    </script>
+
+</body>
+</html>

@@ -231,6 +231,99 @@ def upload_image(request):
 
     return JsonResponse({"ok": True, "id": msg.id})
 
+#edit profile section yaha se jora hu
+
+DEFAULT_ABOUT = "Hey there! I am using HelloApp"
+
+
+def check_image(file, max_mb):
+    """Photo sahi hai ya nahi dekho. Galti ho toh text deta hai, sahi ho toh None."""
+    if file.size > max_mb * 1024 * 1024:
+        return f"Photo must be under {max_mb} MB"
+
+    try:
+        img = Image.open(file)
+        image_format = img.format
+        img.verify()                      # file andar se sach mein image hai ya nahi
+    except Exception:
+        return "This is not a valid image"
+
+    if image_format not in ALLOWED_FORMATS:
+        return "Only JPG, PNG, WEBP or GIF allowed"
+
+    file.seek(0)                          # verify ke baad file ko shuru par laao
+    return None
+
+
+def edit_profile(request):
+
+    if not request.user.is_authenticated:
+        return redirect("login")
+
+    profile = Profile.objects.filter(user=request.user).first()
+
+    # Profile nahi bana (jaise admin ya purana user): naya banane ka form dikhao
+    creating = profile is None
+    if creating:
+        profile = Profile(user=request.user, about=DEFAULT_ABOUT)
+
+    error = None
+    name_value = profile.full_name
+    about_value = profile.about
+    phone_value = profile.phone
+
+    if request.method == "POST":
+        name_value = request.POST.get("full_name", "").strip()
+        about_value = request.POST.get("about", "").strip()
+        dp = request.FILES.get("dp")
+        remove_dp = request.POST.get("remove_dp") == "on"
+
+        if creating:
+            phone_value = request.POST.get("phone", "").strip()
+
+        if creating and not re.fullmatch(r"[6-9]\d{9}", phone_value):
+            error = "Enter a valid 10-digit mobile number."
+        elif creating and Profile.objects.filter(phone=phone_value).exists():
+            error = "This number is already used by another account."
+        elif not name_value:
+            error = "Name cannot be empty."
+        elif len(name_value) > 25:
+            error = "Name can be at most 25 characters."
+        elif len(about_value) > 140:
+            error = "About can be at most 140 characters."
+        else:
+            error = check_image(dp, 2) if dp else None
+
+        if not error:
+            if creating:
+                profile.phone = phone_value
+            profile.full_name = name_value
+            profile.about = about_value or DEFAULT_ABOUT
+
+            if dp:
+                if profile.dp:
+                    profile.dp.delete(save=False)     # purani photo file bhi hatao
+                profile.dp = dp
+            elif remove_dp and profile.dp:
+                profile.dp.delete(save=False)
+                profile.dp = None
+
+            profile.save()
+            request.session["profile_saved"] = True
+            return redirect("edit_profile")           # refresh par dobara save na ho
+
+    saved = request.session.pop("profile_saved", False)
+
+    return render(request, "edit_profile.html", {
+        "profile": profile,
+        "creating": creating,
+        "error": error,
+        "saved": saved,
+        "name_value": name_value,
+        "about_value": about_value,
+        "phone_value": phone_value,
+    })
+
 
 def logout_view(request):
 

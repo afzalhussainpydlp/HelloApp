@@ -89,6 +89,39 @@
         }
         #lightbox.show{display:flex;}
         #lightbox img{max-width:94vw;max-height:92vh;border-radius:6px;}
+
+        /* ---- header par click: dost ki info (DP, naam, phone, About) ---- */
+        .chat-navbar{cursor:pointer;}
+        #contactSheet{
+            display:none;
+            position:fixed;
+            inset:0;
+            background:rgba(0,0,0,.5);
+            z-index:40;
+            align-items:center;
+            justify-content:center;
+            padding:20px;
+        }
+        #contactSheet.show{display:flex;}
+        .contact-card{
+            background:#fff;
+            width:100%;
+            max-width:340px;
+            border-radius:16px;
+            padding:26px 22px;
+            text-align:center;
+            box-shadow:0 14px 40px rgba(0,0,0,.3);
+        }
+        .contact-card img,.contact-ph{
+            width:120px;height:120px;border-radius:50%;
+            object-fit:cover;margin:0 auto 12px;
+        }
+        .contact-ph{background:#e4e8ec;display:flex;align-items:center;justify-content:center;font-size:48px;}
+        .contact-card h3{color:#111b21;margin-bottom:4px;}
+        .contact-phone{color:#667781;font-size:14px;margin-bottom:16px;}
+        .contact-about{text-align:left;border-top:1px solid #e9edef;padding-top:12px;}
+        .contact-about small{color:#128C7E;font-weight:600;}
+        .contact-about p{color:#41525d;margin-top:4px;word-break:break-word;}
     </style>
 </head>
 <body>
@@ -154,6 +187,23 @@
         >
         <button type="submit">➤</button>
     </form>
+
+    <!-- Dost ki info -->
+    <div id="contactSheet">
+        <div class="contact-card">
+            {% if receiver.profile.dp %}
+                <img src="{{ receiver.profile.dp.url }}" alt="Profile">
+            {% else %}
+                <div class="contact-ph">👤</div>
+            {% endif %}
+            <h3>{% firstof receiver.profile.full_name receiver.username %}</h3>
+            {% if receiver.profile.phone %}<p class="contact-phone">+91 {{ receiver.profile.phone }}</p>{% endif %}
+            <div class="contact-about">
+                <small>About</small>
+                <p>{% if receiver.profile.about %}{{ receiver.profile.about }}{% else %}-{% endif %}</p>
+            </div>
+        </div>
+    </div>
 
     <!-- Badi photo -->
     <div id="lightbox"><img id="lightboxImg" alt="Photo"></div>
@@ -274,6 +324,23 @@
         });
         document.addEventListener("keydown", function (e) {
             if (e.key === "Escape") lightbox.classList.remove("show");
+        });
+
+
+        // =====================================================
+        //  Header par click: dost ki info kholo / band karo
+        // =====================================================
+        const contactSheet = document.getElementById("contactSheet");
+
+        document.querySelector(".chat-navbar").addEventListener("click", function (e) {
+            if (e.target.closest(".back")) return;      // back arrow ka apna kaam hai
+            contactSheet.classList.add("show");
+        });
+        contactSheet.addEventListener("click", function (e) {
+            if (e.target === contactSheet) contactSheet.classList.remove("show");
+        });
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "Escape") contactSheet.classList.remove("show");
         });
 
         function scrollToBottom() {

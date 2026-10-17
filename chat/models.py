@@ -46,6 +46,7 @@ class Profile(models.Model):
     phone = models.CharField(max_length=10, unique=True)
     full_name = models.CharField(max_length=25, blank=True)
     dp = models.ImageField(upload_to="dp/", blank=True, null=True)
+    about = models.CharField(max_length=140, blank=True, default="Hey there! I am using HelloApp")
 
     def __str__(self):
         return f"{self.full_name or self.user.username} ({self.phone})"
