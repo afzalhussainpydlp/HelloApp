@@ -9,6 +9,10 @@ def chat_image_path(instance, filename):
     ext = os.path.splitext(filename)[1].lower()
     return f"chat_images/{uuid.uuid4().hex}{ext}"
 
+def status_image_path(instance, filename):
+    ext = os.path.splitext(filename)[1].lower()
+    return f"status_images/{uuid.uuid4().hex}{ext}"
+
 
 class Message(models.Model):
     sender = models.CharField(max_length=100)
@@ -58,3 +62,20 @@ class PhoneOTP(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     attempts = models.PositiveSmallIntegerField(default=0)
     used = models.BooleanField(default=False)
+    
+    
+class Status(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="statuses")
+    text = models.CharField(max_length=300, blank=True)           # text status ya photo ka caption
+    bg = models.CharField(max_length=7, default="#128C7E")        # text status ka background rang
+    image = models.ImageField(upload_to=status_image_path, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+
+class StatusView(models.Model):
+    status = models.ForeignKey(Status, on_delete=models.CASCADE, related_name="views")
+    viewer = models.ForeignKey(User, on_delete=models.CASCADE)
+    viewed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("status", "viewer")                    # ek banda ek status ek baar

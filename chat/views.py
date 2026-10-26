@@ -11,12 +11,13 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.crypto import salted_hmac, constant_time_compare
 from django.db.models import Q, Count
-from .models import Message, UserStatus, Profile, PhoneOTP
+from .models import Message, UserStatus, Profile, PhoneOTP, Status, StatusView
 from PIL import Image
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
-from .consumers import message_status, build_events, room_name
+
+from .consumers import message_status, build_events, room_name, user_card
 
 
 
@@ -460,3 +461,162 @@ def profile_view(request):
             return redirect("home")
 
     return render(request, "register_profile.html", {"error": error})
+
+# =====================================================
+#  STATUS (24 ghante wala)
+# =====================================================
+
+STATUS_HOURS = 24
+STATUS_COLORS = ["#128C7E", "#075E54", "#6A1B9A", "#C62828", "#EF6C00", "#1565C0", "#37474F"]
+
+
+def chat_partner_ids(user):
+    """Wo log jinse mera message ka lena-dena hua hai (inhi ko mera status dikhta hai)."""
+    ids = set(
+        Message.objects.filter(sender_user=user).values_list("receiver_user_id", flat=True)
+    ) | set(
+        Message.objects.filter(receiver_user=user).values_list("sender_user_id", flat=True)
+    )
+    ids.discard(None)
+    ids.discard(user.id)
+    return ids
+
+
+def active_statuses():
+    """Sirf pichhle 24 ghante ke status."""
+    return Status.objects.filter(created_at__gte=timezone.now() - timedelta(hours=STATUS_HOURS))
+
+
+def delete_expired_statuses():
+    """24 ghante se purane status (aur unki photo ki file) hata do."""
+    cutoff = timezone.now() - timedelta(hours=STATUS_HOURS)
+    for old in Status.objects.filter(created_at__lt=cutoff):
+        if old.image:
+            old.image.delete(save=False)
+        old.delete()
+
+
+def status_page(request):
+
+    if not request.user.is_authenticated:
+        return redirect("login")
+
+    delete_expired_statuses()
+    me = request.user
+
+    error = None
+    text_value = ""
+
+    # ---- Naya status post karna
+    if request.method == "POST":
+        text_value = request.POST.get("text", "").strip()
+        bg = request.POST.get("bg", "")
+        image = request.FILES.get("image")
+
+        if bg not in STATUS_COLORS:
+            bg = STATUS_COLORS[0]
+
+        if not text_value and not image:
+            error = "Write something or choose a photo."
+        elif len(text_value) > 300:
+            error = "Status text can be at most 300 characters."
+        else:
+            error = check_image(image, 5) if image else None
+
+        if not error:
+            Status.objects.create(user=me, text=text_value, bg=bg, image=image)
+            return redirect("status")
+
+    # ---- Kiske status dikhane hain: mere apne + chat wale doston ke
+    partners = chat_partner_ids(me)
+    statuses = list(
+        active_statuses()
+        .filter(Q(user=me) | Q(user_id__in=partners))
+        .select_related("user")
+        .order_by("created_at")
+    )
+
+    viewed_ids = set(
+        StatusView.objects.filter(viewer=me, status__in=statuses).values_list("status_id", flat=True)
+    )
+
+    # Mere status ko kis-kisne dekha
+    viewers = {}
+    for v in StatusView.objects.filter(status__user=me, status__in=statuses).select_related("viewer"):
+        viewers.setdefault(v.status_id, []).append(user_card(v.viewer)[0])
+
+    groups = {}
+    for s in statuses:
+        mine = s.user_id == me.id
+        if s.user_id not in groups:
+            name, dp = user_card(s.user)
+            groups[s.user_id] = {"user_id": s.user_id, "name": "My status" if mine else name,
+                                 "dp": dp, "mine": mine, "items": []}
+        item = {
+            "id": s.id,
+            "text": s.text,
+            "bg": s.bg,
+            "image": s.image.url if s.image else "",
+            "created_at": s.created_at.isoformat(),
+            "viewed": mine or s.id in viewed_ids,
+        }
+        if mine:
+            item["viewers"] = viewers.get(s.id, [])          # sirf owner ko dikhta hai
+        groups[s.user_id]["items"].append(item)
+
+    my_name, my_dp = user_card(me)
+    if me.id not in groups:                                   # abhi koi status nahi
+        groups[me.id] = {"user_id": me.id, "name": "My status", "dp": my_dp, "mine": True, "items": []}
+
+    # Mera pehle. Baaki: jinka status maine nahi dekha wo pehle, phir naya-purana
+    others = [g for g in groups.values() if not g["mine"]]
+    others.sort(key=lambda g: g["items"][-1]["created_at"], reverse=True)      # naya upar
+    others.sort(key=lambda g: all(i["viewed"] for i in g["items"]))             # unviewed pehle (stable sort)
+    ordered = [groups[me.id]] + others
+
+    return render(request, "status.html", {
+        "status_data": {"me": me.id, "groups": ordered, "colors": STATUS_COLORS},
+        "error": error,
+        "text_value": text_value,
+    })
+
+
+def status_mark_viewed(request, status_id):
+
+    if not request.user.is_authenticated:
+        return JsonResponse({"ok": False, "error": "Login required"}, status=401)
+    if request.method != "POST":
+        return JsonResponse({"ok": False}, status=405)
+
+    status = active_statuses().filter(id=status_id).first()
+    if not status or status.user_id == request.user.id:
+        return JsonResponse({"ok": False}, status=404)
+
+    # Sirf wahi dekh sakta hai jisse mera chat ka rishta hai
+    if status.user_id not in chat_partner_ids(request.user):
+        return JsonResponse({"ok": False}, status=403)
+
+    StatusView.objects.get_or_create(status=status, viewer=request.user)
+    return JsonResponse({"ok": True})
+
+
+def status_delete(request, status_id):
+
+    if not request.user.is_authenticated:
+        return JsonResponse({"ok": False, "error": "Login required"}, status=401)
+    if request.method != "POST":
+        return JsonResponse({"ok": False}, status=405)
+
+    status = Status.objects.filter(id=status_id, user=request.user).first()   # sirf apna
+    if not status:
+        return JsonResponse({"ok": False}, status=404)
+
+    if status.image:
+        status.image.delete(save=False)
+    status.delete()
+    return JsonResponse({"ok": True})
+
+def calls_page(request):
+    if not request.user.is_authenticated:
+        return redirect("login")
+    return render(request, "calls.html")

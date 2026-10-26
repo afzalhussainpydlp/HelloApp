@@ -225,6 +225,8 @@
 
     </div>
 
+    {% include "tabs.html" with active="chats" %}
+
 
     <!-- Search Box: apni chats ke naam se dhundo -->
 
@@ -371,6 +373,11 @@
         }
 
         document.getElementById("fab").addEventListener("click", openSheet);
+
+        // Doosre page ke menu se "New chat" dabane par: /?new=1 se aaye toh popup khol do
+        if (new URLSearchParams(window.location.search).get("new") === "1") {
+            openSheet();
+        }
         document.getElementById("cancelBtn").addEventListener("click", closeSheet);
 
         overlay.addEventListener("click", function (e) {

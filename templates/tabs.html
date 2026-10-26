@@ -1,0 +1,27 @@
+<style>
+    .tabs{
+        display:flex;
+        background:#25D366;
+    }
+    .tabs .tab{
+        flex:1;
+        text-align:center;
+        padding:13px 4px;
+        color:rgba(255,255,255,.72);
+        font-size:14px;
+        font-weight:600;
+        letter-spacing:.6px;
+        text-transform:uppercase;
+        text-decoration:none;
+        border-bottom:3px solid transparent;
+        transition:background .15s, color .15s;
+    }
+    .tabs .tab:hover{background:rgba(255,255,255,.1);}
+    .tabs .tab.active{color:#fff;border-bottom-color:#fff;}
+</style>
+
+<nav class="tabs" aria-label="Main tabs">
+    <a class="tab {% if active == 'chats' %}active{% endif %}" href="{% url 'home' %}">Chats</a>
+    <a class="tab {% if active == 'status' %}active{% endif %}" href="{% url 'status' %}">Status</a>
+    <a class="tab {% if active == 'calls' %}active{% endif %}" href="{% url 'calls' %}">Calls</a>
+</nav>

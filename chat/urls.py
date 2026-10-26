@@ -15,4 +15,8 @@ urlpatterns = [
     path("logout/", views.logout_view, name="logout"),
     path("upload-image/", views.upload_image, name="upload_image"),
     path("profile/edit/", views.edit_profile, name="edit_profile"),
+    path("status/", views.status_page, name="status"),
+    path("status/<int:status_id>/view/", views.status_mark_viewed, name="status_viewed"),
+    path("status/<int:status_id>/delete/", views.status_delete, name="status_delete"),
+    path("calls/", views.calls_page, name="calls"),
 ]

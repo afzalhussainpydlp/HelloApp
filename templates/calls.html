@@ -1,0 +1,86 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calls - HelloApp</title>
+
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <style>
+        body{background:#f0f2f5;min-height:100vh;}
+
+        .empty{
+            text-align:center;
+            color:#667781;
+            margin:80px auto 0;
+            padding:0 24px;
+            max-width:420px;
+        }
+        .empty .icon{
+            width:96px;height:96px;border-radius:50%;
+            background:#e7f8ee;color:#128C7E;
+            display:flex;align-items:center;justify-content:center;
+            margin:0 auto 18px;
+        }
+        .empty h3{color:#41525d;margin-bottom:8px;font-size:20px;}
+        .empty p{line-height:1.55;font-size:15px;}
+        .empty .soon{
+            display:inline-block;margin-top:16px;
+            padding:6px 14px;border-radius:20px;
+            background:#fff3cd;color:#8a6d00;font-size:13px;font-weight:600;
+        }
+
+        .fab-call{
+            position:fixed;right:24px;bottom:24px;
+            width:58px;height:58px;border:none;border-radius:50%;
+            background:#25D366;color:#fff;
+            display:flex;align-items:center;justify-content:center;
+            cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,.28);
+        }
+        .fab-call:hover{background:#1ebe5a;}
+
+        #toast{
+            position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);
+            background:#323232;color:#fff;padding:11px 18px;border-radius:24px;
+            font-size:14px;opacity:0;pointer-events:none;transition:all .25s;z-index:70;
+        }
+        #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+    </style>
+</head>
+<body>
+
+    {% include "page_header.html" with active="calls" %}
+
+    <div class="empty">
+        <div class="icon">
+            <svg viewBox="0 0 24 24" width="44" height="44" fill="currentColor">
+                <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/>
+            </svg>
+        </div>
+        <h3>No calls yet</h3>
+        <p>Your voice and video calls with friends will show up here.</p>
+        <span class="soon">Calling is coming soon</span>
+    </div>
+
+    <button class="fab-call" id="fabCall" type="button" aria-label="New call">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor">
+            <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/>
+        </svg>
+    </button>
+
+    <div id="toast">Calling is coming soon</div>
+
+    {% include "presence_socket.html" %}
+
+    <script>
+        const toast = document.getElementById("toast");
+        document.getElementById("fabCall").addEventListener("click", function () {
+            toast.classList.add("show");
+            setTimeout(function () { toast.classList.remove("show"); }, 2200);
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,94 @@
+<style>
+    .navbar{position:relative;}
+    .navbar .icons{display:flex !important;align-items:center;gap:4px;}
+    .icon-btn{
+        width:42px;height:42px;border:none;border-radius:50%;
+        background:transparent;color:#fff;
+        display:flex;align-items:center;justify-content:center;
+        cursor:pointer;transition:background .15s;
+    }
+    .icon-btn:hover,.icon-btn:focus-visible{background:rgba(255,255,255,.2);outline:none;}
+    .menu-wrap{position:relative;}
+    .menu{
+        display:none;position:absolute;right:0;top:48px;width:250px;
+        background:#fff;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.25);
+        padding:6px 0;z-index:60;overflow:hidden;
+    }
+    .menu.show{display:block;}
+    .menu-profile{
+        display:flex;align-items:center;gap:12px;padding:12px 16px;
+        text-decoration:none;border-bottom:1px solid #eef0f2;margin-bottom:4px;
+    }
+    .menu-profile:hover{background:#f5f6f6;}
+    .menu-profile img,.menu-avatar{width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+    .menu-avatar{background:#e4e8ec;display:flex;align-items:center;justify-content:center;font-size:22px;}
+    .menu-who{display:flex;flex-direction:column;min-width:0;}
+    .menu-who b{color:#111b21;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .menu-who small{color:#667781;font-size:12.5px;}
+    .menu-item{
+        display:block;width:100%;padding:12px 16px;border:none;background:none;
+        text-align:left;font:inherit;font-size:15px;color:#111b21;text-decoration:none;cursor:pointer;
+    }
+    .menu-item:hover{background:#f5f6f6;}
+    .menu-danger{color:#d93025;}
+</style>
+
+<div class="navbar">
+
+    <h1>HelloApp</h1>
+
+    <div class="icons">
+
+        <div class="menu-wrap">
+            <button class="icon-btn" id="menuBtn" type="button" aria-label="Menu" aria-haspopup="true">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                    <circle cx="12" cy="5" r="2"></circle>
+                    <circle cx="12" cy="12" r="2"></circle>
+                    <circle cx="12" cy="19" r="2"></circle>
+                </svg>
+            </button>
+
+            <div class="menu" id="menu">
+
+                <a class="menu-profile" href="{% url 'edit_profile' %}">
+                    {% if request.user.profile.dp %}
+                        <img src="{{ request.user.profile.dp.url }}" alt="Me">
+                    {% else %}
+                        <span class="menu-avatar">&#128100;</span>
+                    {% endif %}
+                    <span class="menu-who">
+                        <b>{% firstof request.user.profile.full_name request.user.username %}</b>
+                        <small>View and edit profile</small>
+                    </span>
+                </a>
+
+                <a class="menu-item" href="{% url 'home' %}?new=1">New chat</a>
+
+                <a class="menu-item menu-danger" href="{% url 'logout' %}">Logout</a>
+
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+{% include "tabs.html" with active=active %}
+
+<script>
+    (function () {
+        const menu = document.getElementById("menu");
+        const closeMenu = function () { menu.classList.remove("show"); };
+
+        document.getElementById("menuBtn").addEventListener("click", function (e) {
+            e.stopPropagation();
+            menu.classList.toggle("show");
+        });
+        document.addEventListener("click", function (e) {
+            if (!e.target.closest(".menu")) closeMenu();
+        });
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "Escape") closeMenu();
+        });
+    })();
+</script>
